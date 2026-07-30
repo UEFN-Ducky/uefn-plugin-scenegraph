@@ -1,0 +1,64 @@
+{
+  "id": "scenegraph",
+  "kind": "plugin",
+  "version": "1.0.11",
+  "label": "UEFN Scene Graph",
+  "description": "UEFN Scene Graph entities, components, prefabs. Bundles the scenegraph skill.",
+  "min_app_version": "1.0.0",
+  "default_enabled": true,
+  "secret_keys": [],
+  "contributes": {
+    "agent.tools": {
+      "category": "scenegraph",
+      "tools": [
+        "scene_graph_capabilities",
+        "list_entities",
+        "get_entity_info",
+        "list_scene_component_classes",
+        "get_selected_entities",
+        "select_entities",
+        "create_entity",
+        "set_entity_transform",
+        "add_entity_component",
+        "remove_entity_component",
+        "set_entity_component_property",
+        "get_entity_component_property",
+        "rename_entity",
+        "set_entity_parent",
+        "duplicate_entity",
+        "destroy_entity",
+        "create_prefab_from_entities",
+        "instantiate_prefab",
+        "convert_actors_to_entities"
+      ],
+      "intent_pattern": "\\b(scene\\s*graph|entity|prefab|component)\\b",
+      "plan_tools": [
+        "scene_graph_capabilities",
+        "list_entities",
+        "get_entity_info",
+        "list_scene_component_classes",
+        "get_selected_entities",
+        "get_entity_component_property"
+      ]
+    },
+    "walkthrough": {
+      "id": "scenegraph",
+      "title": "Scene Graph tools ready",
+      "auto_start": "first_enable",
+      "settings_tab": "Store",
+      "steps": [
+        {
+          "target": "settings.store.root",
+          "title": "Scene Graph tools ready",
+          "body": "Scene Graph MCP tools are live. Ask to create/edit entities, components, or prefabs in the editor.",
+          "advance": "next",
+          "mode": "rect"
+        }
+      ]
+    }
+  },
+  "backend": {
+    "entry": "backend",
+    "register": "register"
+  }
+}
