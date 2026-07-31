@@ -60,18 +60,42 @@ are `builtin` (engine), `project` (your Verse code), `asset_generated`
 - Prefab-editor windows run in transient worlds; the tools only report the
   open level's world.
 
-### Prefabs
+### Prefabs (prefab asset first)
 
-- `create_prefab_from_entities` packages the named entities and REPLACES them
-  in the level with an instance of the new prefab (class name becomes
-  `P_<name>_C` on the instance). The asset saves immediately; its Verse class
-  appears in Assets.digest.verse only after the next Verse build.
-- `instantiate_prefab` is best-effort: Epic's prefab scripting is WIP
-  ("Override support will be done in a future development phase"). When it
-  refuses, the reliable paths are (a) drag from Content Browser, or (b) spawn
-  at runtime in Verse (see the Verse authoring reference).
-- Prefab overrides (per-instance property tweaks) are NOT scriptable yet —
-  edit the prefab asset or set properties on the instance's components.
+Hard rules and orbit pitfalls: `skill_read_subskill("scenegraph", "prefab_only")`.
+
+- `create_empty_prefab` creates a blank `EntityPrefab` asset under the project
+  mount (e.g. `/MyProject/SolarSystem/EP_Thing`) and saves it. Nothing is
+  placed in the level. Prefer this + edit/Save in the UEFN prefab UI for
+  prefab-owned structure.
+- `create_prefab_from_entities` packages **loose** named entities and REPLACES
+  them in the level with an instance of the **new** prefab. The asset saves
+  immediately; its Verse class appears in Assets.digest.verse only after the
+  next Verse build. Fails if the asset path already exists — pick a new
+  `prefab_name`.
+- **NEVER** `create_prefab_from_entities` on an already-placed `EP_*` instance
+  (or its children) to “save overrides back” — that can collapse the hierarchy
+  into an empty shell. Destroy broken instances, re-`instantiate_prefab` the
+  original asset, and edit the prefab in UEFN UI instead.
+- `instantiate_prefab` places via `EditorActorSubsystem.spawn_actor_from_object`
+  on the EntityPrefab (same as Content Browser drag). Result: an
+  `EntityProxyActor` wrapping the prefab entity under `LevelEntity`. Optional
+  SpatialMath `translation` `[forward, left, up]`. Do not spawn
+  `EntityProxyActor` by class with `spawn_actor`.
+- Prefab-editor windows run in transient worlds; the tools only report the
+  open level's world. For prefab-owned content: open the `.EntityPrefab` in
+  UEFN and Save. Do not treat level-instance edits as the source of truth.
+- Prefab overrides (per-instance property tweaks) are NOT a separate scripting
+  API — prefer editing the prefab asset; level tweaks diverge other instances.
+- `list_entities` filters `TRASH_*`, `REINST_*`, and EntityProxyActor shadow
+  copies so each placed prefab appears once (canonical LevelEntity path).
+
+### Static vs Verse spawn
+
+- Always-on / match-start: prefab asset + `instantiate_prefab` +
+  `save_current_level`.
+- Runtime spawn/despawn: Verse `P_*{}` + `Sim.AddEntities` (see
+  `verse_authoring`) after Verse rebuild.
 
 ### Converting actors
 
@@ -91,4 +115,12 @@ reports per-actor results. Devices should stay devices.
   `left: 50` is Unreal `Y = -50`. Verify with `get_entity_info` bounds.
 - **Component missing after project Verse edit** — the editor needs a Verse
   build before new project component classes exist; push changes and retry.
-- **Changes gone after UEFN restart** — `save_current_level()` was skipped.
+  Project paths often look like
+  `/<Project>/_Verse.Verse-<Module>-<class_name>`.
+- **Changes gone after UEFN restart** — `save_current_level()` was skipped
+  (level) or the EntityPrefab was not Saved (asset).
+- **Prefab hierarchy vanished after packaging** — you likely ran
+  `create_prefab_from_entities` on an existing instance; restore via
+  `instantiate_prefab` of the original asset (see `prefab_only`).
+- **Pivot won't orbit / `local_transform_error`** — add `transform_component`
+  (or `SetLocalTransform` in Verse) before KFM.

@@ -1,11 +1,11 @@
 ---
 source_plugin_id: scenegraph
 name: scenegraph
-description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, and author Verse components that compile first try"
+description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, and grant items/weapons through inventories"
 license: All Rights Reserved
 metadata:
   label: "UEFN Scene Graph"
-  version: 3
+  version: 6
   author: UEFN-Ducky
   copyright: Copyright 2026 UEFN-Ducky
   allow_redistribute: false
@@ -22,13 +22,18 @@ built with the tools below; runtime behavior is written in Verse
 The tools are **small composable primitives** — probe, read, create, change —
 chain them for the task at hand.
 
+**Prefab asset first.** Prefab-owned content is edited on the `.EntityPrefab`
+asset (or packaged from *loose* level entities into a *new* prefab). Never treat
+mutating a placed level instance as the primary workflow — see
+`skill_read_subskill("scenegraph", "prefab_only")`.
+
 ## The tools (flat MCP tools)
 
 | Kind | Tools |
 |------|-------|
 | **PROBE** | `scene_graph_capabilities` |
 | **READ** | `list_entities`, `get_entity_info`, `list_scene_component_classes`, `get_selected_entities`, `get_entity_component_property` |
-| **CREATE** | `create_entity`, `add_entity_component`, `create_prefab_from_entities`, `instantiate_prefab` |
+| **CREATE** | `create_entity`, `add_entity_component`, `create_empty_prefab`, `create_prefab_from_entities`, `instantiate_prefab` |
 | **CHANGE** | `set_entity_transform`, `set_entity_component_property`, `rename_entity`, `set_entity_parent`, `duplicate_entity`, `select_entities` |
 | **DESTROY** | `destroy_entity` (approval-gated), `remove_entity_component`, `convert_actors_to_entities` (approval-gated) |
 | **VERSE API** | `get_verse_api`, `search_verse_digest`, `list_verse_modules` |
@@ -52,12 +57,37 @@ set_entity_component_property({"entity": "Lamp",
 save_current_level()
 ```
 
+## Golden path (Entity Prefab — asset first, then place)
+
+```
+# Prefer blank asset + edit in UEFN prefab UI (Save the prefab):
+create_empty_prefab({"prefab_name": "EP_Lamp", "folder": "/MyProject/Prefabs"})
+
+# Or package LOOSE level entities into a NEW prefab (sources become an instance).
+# NEVER call this on an already-placed EP_* instance — it can collapse the tree.
+create_prefab_from_entities({
+  "entity_names": ["Lamp"], "prefab_name": "EP_Lamp", "folder": "/MyProject/Prefabs"})
+
+# Place always-on copies in the level (Content Browser drag equivalent):
+instantiate_prefab({
+  "prefab_path": "/MyProject/Prefabs/EP_Lamp",
+  "translation": [800, 0, 0]})
+save_current_level()
+```
+
+Static / always-on: prefab asset + `instantiate_prefab` + `save_current_level`.
+Use Verse `P_*` spawn **only** for runtime spawn/despawn. For prefab-owned
+structure/components after the asset exists: edit the `.EntityPrefab` in UEFN
+and Save — MCP cannot see EntityPrefab editor tabs (transient worlds).
+
 ## Golden path (write Verse against Scene Graph)
 
 ```
 get_verse_api({"name": "entity"})            # exact members on THIS build
+get_verse_api({"name": "component"})         # lifecycle + TickEvents contract
 get_verse_api({"name": "mesh_component"})    # before using any component API
 get_verse_api({"name": "keyframed_movement_component"})  # BEFORE any motion
+get_verse_api({"name": "inventory_component"})  # BEFORE granting items/weapons
 get_verse_api({"name": "P_MyPrefab"})        # generated prefab class (Assets.digest)
 # then write the .verse file with workspace_write_file and check workspace_list_verse_errors
 ```
@@ -68,15 +98,49 @@ free-text hunts, `list_verse_modules` for the module map.
 
 ## Hard rules
 
+- **Prefab asset first / never level-instance mutations as source of truth.**
+  Prefab-owned hierarchy, meshes, and Verse comps belong on the `.EntityPrefab`
+  (Save the prefab). Do not move bodies, add meshes, or attach comps on the
+  placed level copy as the primary workflow — those become instance overrides
+  (or destroy hierarchy). Details: `prefab_only`.
+- **MCP cannot see EntityPrefab editor tabs** (transient worlds). Tools only
+  list the open **level**. For prefab-owned edits: open the asset in UEFN UI
+  and Save. Do not “fix it on the level instance instead.”
+- **Never `create_prefab_from_entities` on an already-placed prefab instance** —
+  packaging `EP_*` children into a new shell can collapse the tree. Only package
+  *loose* level entities into a *new* prefab name.
 - **ALWAYS digest-check before Scene Graph Verse** — `get_verse_api` /
   `search_verse_digest` for every unfamiliar type. Never invent APIs.
 - **Motion over time = `keyframed_movement_component`**
   (`using { /Verse.org/SceneGraph/KeyframedMovement }`). Call
   `SetKeyframes([]keyframed_movement_delta, oneshot_/loop_/pingpong_…)` then
-  `Play()`. Translation/Scale on deltas are **additive**. Prefer
-  `linear_easing_function{}`. **Never** use `creative_prop` /
-  `animation_controller` keyframes for Scene Graph entities — different API.
-  **Never** spam per-tick `SetGlobalTransform` for flight/lerp (use KFM).
+  `Play()` — `SetKeyframes` rebases onto the current transform and does **not**
+  autoplay. Translation/Scale on deltas are **additive**. Prefer
+  `linear_easing_function{}`. The class is `<final>`: compose, never subclass.
+  Empty pivots need `transform_component` before KFM (`SetLocalTransform`
+  creates one). **Never** use `creative_prop` / `animation_controller`
+  keyframes for Scene Graph entities — different API.
+- **Per-frame work = `TickEvents.PrePhysics` / `PostPhysics`**, subscribed in
+  `OnBeginSimulation` and **cancelled in `OnEndSimulation`**. The callback
+  payload is DeltaTime. `loop` + `Sleep(0.0)` is not a frame hook and is the
+  usual reason generated motion stutters or never runs. `OnSimulate` runs
+  **once** — wrap listeners in `loop`. Details: `verse_authoring`.
+- **Follow/attach = origin, not per-tick copying.** `SetOrigin(entity_origin{
+  Entity := Target})` / `ResetOrigin()` re-base an entity onto another without
+  reparenting. Do not change origin and move in the same frame. Details:
+  `movement_transforms`.
+- **Components simulate in the editor as well as in play.** A static viewport
+  usually means no `transform_component`, a component that was never attached
+  (Verse not rebuilt), logic in the wrong hook, or a missing `Play()` — work
+  the checklist in `movement_transforms`, then confirm in PIE / Launch Session.
+- **No Scene Graph `button_component`.** Player interaction =
+  `interactable_component` / `basic_interactable_component`. Creative
+  `button_device` is a device, not an entity component. Catalog: `components`.
+- **Weapons and items are entities, not devices.** Every Fortnite weapon is a
+  concrete `entity` class (`/Fortnite.com/Weapons`, `/Fortnite.com/Items`), so
+  granting is `Inventory.AddItemDistribute(AssaultRifle_BR_CH4S1_Rare{})` after
+  finding the agent's descendant `inventory_component`. Never `spawn_actor` a
+  weapon class. Recipes: `itemization`.
 - **Mesh axis quirks**: put FBX yaw/pitch offsets on a **child** mesh entity
   (`SetLocalTransform`), keep root entity yaw = thrust/look heading.
 - **SpatialMath axes, not Unreal axes**: translations/scales are
@@ -85,24 +149,48 @@ free-text hunts, `list_verse_modules` for the module map.
 - **Property names are case-sensitive Verse digest names** (`Visible`,
   `Collidable`, `HideDuration`) — check `get_verse_api(<component>)` first. The
   mangled `__verse_0x...` storage names are handled internally; never pass them.
-- **One component of a given class per entity** — adding an existing class
-  returns the one already there.
+- **One component per subclass _group_ per entity** — not per class. All lights
+  derive from `light_component`, so an entity holds **one light total**; two
+  lights need two entities. Adding an existing class returns the one already
+  there.
 - **Asset components need PROJECT content**: mesh/particle/sound components
   reference the project's digest-generated asset classes; Fortnite `/Game/...`
   content will not attach. New island assets use `get_project_info().content_root`
   (never invent `/Game/...` for creates).
 - **Entity names must be unique per level.** `create_entity` errors on
   duplicates; rename instead of recreating.
-- **Prefab scripting is WIP in UEFN.** `create_prefab_from_entities` works (the
-  sources become an instance); `instantiate_prefab` is best-effort — when it
-  refuses, place instances from the Content Browser or spawn them in Verse.
+- **Entity Prefabs are first-class MCP tools.** `create_empty_prefab` /
+  `create_prefab_from_entities` (loose entities → new name only) create assets
+  under the project mount; `instantiate_prefab` places them via
+  `spawn_actor_from_object` (same as Content Browser → `EntityProxyActor`). Do
+  **not** `spawn_actor` an `EntityProxyActor` by class.
+- **Module name collision** — do not put Verse under `Content/Verse/<Name>/`
+  when `Content/<Name>/` already owns Assets module `Name`. Use a distinct
+  folder (see `prefab_only` / `verse_authoring`).
+- **Static vs dynamic:** always-on → prefab asset + `instantiate_prefab` +
+  `save_current_level`. Runtime spawn/despawn → Verse `P_*{}` +
+  `Sim.AddEntities` / `RemoveFromParent` after Verse rebuild (see
+  `verse_authoring`).
 - **Custom Verse components cannot be attached from the editor tools until the
   project's Verse has built** — write the `.verse` file, push changes, then the
-  class exists to add in the editor (or add it in the Details panel).
+  class exists to add in the editor (or add it in the Details panel). Project
+  path spelling often: `/<Project>/_Verse.Verse-<Module>-<class_name>`.
 - **Devices are not entities.** Existing device wiring stays on
   `wire_verse_device_ref` / `set_verse_editable`; Scene Graph tools only touch
   entities.
 
 ## After ANY scene graph change
 
-`save_current_level()` — entities live in the level. Nothing auto-saves.
+`save_current_level()` for level/instance edits. Prefab-owned asset edits:
+**Save the EntityPrefab** in UEFN. Nothing auto-saves.
+
+## Reference files
+
+Load with `skill_read_subskill("scenegraph", "<id>")`:
+
+- `verse_authoring` — component lifecycle, per-frame `TickEvents`, runtime `P_*` spawn, hierarchy queries, module collision
+- `editor_tools` — class resolution, asset comps, prefab packaging wrinkles, troubleshooting
+- `components` — full builtin catalog, asset vs plain, `BasicShapes`, itemization comps, no `button_component`
+- `prefab_only` — prefab-asset-first hard rules, MCP level-vs-tab limit, banned repackage, orbit recipe
+- `movement_transforms` — why it isn't moving: local vs global, origins/attach, full KFM API, LUF axes, known transform bugs
+- `itemization` — items and inventories, granting weapons from `/Fortnite.com/Weapons`, pickups, equipping

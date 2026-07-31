@@ -1,10 +1,10 @@
 ---
-description: "Deep Verse authoring for Scene Graph: custom component lifecycle, spawning prefabs at runtime, hierarchy queries, events, tags, and SpatialMath transforms — with build-verified signatures"
+description: "Deep Verse authoring for Scene Graph: custom component lifecycle, per-frame TickEvents, spawning prefabs at runtime, hierarchy queries, events, tags, and SpatialMath transforms — with build-verified signatures"
 metadata:
   order: 1
   label: "Verse authoring (components & prefabs)"
   default_enabled: false
-  load_condition: "Writing or debugging Verse that defines a component, spawns/queries entities or prefabs, or manipulates entity transforms"
+  load_condition: "Writing or debugging Verse that defines a component, needs a per-frame update, spawns/queries entities or prefabs, or manipulates entity transforms"
 ---
 
 ## Verse authoring for Scene Graph
@@ -22,6 +22,9 @@ using it — it returns the declaration from THIS build's digests.
 
 ### Custom component
 
+`<final_super>` is **required** — without it the class cannot be added to an
+entity. Subclasses of your component do not repeat it.
+
 ```verse
 door_opener_component := class<final_super>(component):
     @editable
@@ -32,23 +35,84 @@ door_opener_component := class<final_super>(component):
         # synchronous setup: cache references, subscribe to events
 
     OnSimulate<override>()<suspends>:void =
-        # async behavior; this task is cancelled before OnEndSimulation
+        # async behavior; runs ONCE, so wrap listeners in loop.
+        # This task is cancelled before OnEndSimulation.
         loop:
             Sleep(1.0)
 ```
 
-Lifecycle order (from the `component` digest):
+Lifecycle order (from the `component` digest doc block):
 
-1. `OnAddedToScene` — entity entered the scene; component queries are valid after this.
-2. `OnBeginSimulation` — set up TickEvents callbacks / guaranteed-immediate setup.
-3. `OnSimulate` (`<suspends>`) — long-running behavior; cancelled before step 4.
-4. `OnEndSimulation` — cancel cached cancelables (experience reset or entity removed).
+1. `OnAddedToScene` — entity entered the scene; component queries are valid
+   *after* this completes.
+2. `OnBeginSimulation` — guaranteed-immediate setup: cache lookups, subscribe
+   `TickEvents`. Runs after `OnAddedToScene`, before `OnSimulate`.
+3. `OnSimulate` (`<suspends>`) — long-running async behavior. Called once;
+   cancelled before step 4.
+4. `OnEndSimulation` — experience reset or entity removed from the scene.
+   Cancel every cancelable you cached. Only runs if `OnBeginSimulation` ran.
 5. `OnRemovingFromScene` — final cleanup before disposal.
+
+Rules the digest states outright:
+
+- **One component per subclass _group_**, not per class. All the lights derive
+  from `light_component`, so an entity can hold **one** light total — a spot and
+  a sphere light need two entities.
+- `GetComponent` / `AddComponents` **phase-sync**: called during the
+  AddedToScene or BeginSimulation phase, they guarantee the returned or added
+  component has reached that same phase. That is why caching in
+  `OnBeginSimulation` is safe and querying earlier is not.
+- **Keep logic in components, not in `entity` subclasses.** Epic's own note on
+  `entity`: prefabs get restructured constantly during production, and code on
+  the entity class forces refactors.
+- Components simulate in the **editor as well as in play**. If nothing happens
+  in the viewport see the checklist in `movement_transforms`, then confirm in
+  PIE before calling it broken.
 
 Also on `component`: `Entity` (the owner), `RemoveFromEntity()`,
 `IsInScene[]`, `IsSimulating[]`, `SendDown(event)`, `OnReceive(event)`
-(override, return `true` to consume), and `TickEvents` (PrePhysics/PostPhysics
-per-frame callbacks).
+(override, return `true` to consume — `MinUploadedAtFNVersion := 4000`), and
+`TickEvents`.
+
+### Per-frame work: TickEvents, never `Sleep(0.0)`
+
+`loop` + `Sleep(0.0)` is not a frame hook — it is the classic cause of motion
+that stutters, lags a frame behind physics, or appears not to run at all. Use
+the `tick_events` object every component already owns:
+
+```verse
+mover_component := class<final_super>(component):
+    @editable Speed:float = 200.0
+    var MaybeTick:?cancelable = false
+
+    OnBeginSimulation<override>():void =
+        (super:)OnBeginSimulation()
+        set MaybeTick = option{ TickEvents.PrePhysics.Subscribe(OnPrePhysics) }
+
+    OnPrePhysics(DeltaTime:float):void =
+        T := Entity.GetLocalTransform()
+        Entity.SetLocalTransform(transform:
+            Translation := T.Translation + vector3{Forward := Speed * DeltaTime}
+            Rotation := T.Rotation
+            Scale := T.Scale)
+
+    OnEndSimulation<override>():void =
+        (super:)OnEndSimulation()
+        if (Tick := MaybeTick?):
+            Tick.Cancel()
+        set MaybeTick = false
+```
+
+- `TickEvents.PrePhysics` / `TickEvents.PostPhysics` are `execution_listenable`:
+  `Subscribe(Callback:type{_(:float):void})<transacts>:cancelable`, and the
+  float payload is **DeltaTime**. `Await()` works too if you are already inside
+  `OnSimulate`.
+- PrePhysics = affect this frame's physics; PostPhysics = react to its result.
+- **Always cancel in `OnEndSimulation`** — a leaked subscription keeps ticking
+  against a dead entity.
+- Scale motion by `DeltaTime`; never assume a fixed frame rate.
+- For timed or looping animation prefer `keyframed_movement_component` over
+  ticking a transform yourself — see `movement_transforms`.
 
 ### Entity API (verified members)
 
@@ -66,6 +130,10 @@ per-frame callbacks).
   hierarchy every tick.
 
 ### Spawning a prefab at runtime
+
+Use this **only for dynamic** spawn/despawn (waves, interact, inventory).
+Always-on scenery should be placed once with `instantiate_prefab` +
+`save_current_level` — not spawned from Verse every match.
 
 Prefabs created in the editor generate a Verse class (and an `entity_prefab`
 asset ref) in **Assets.digest.verse** on the next Verse build:
@@ -92,8 +160,16 @@ prefab was created — build/push Verse changes first, then check
 
 ### Transforms (SpatialMath)
 
+Full treatment — local vs global, origins, attaching to a player, the
+deep-hierarchy bug: `skill_read_subskill("scenegraph", "movement_transforms")`.
+
 `vector3` fields are `Forward` (was X), `Left` (was -Y), `Up` (was Z).
 `transform` is `{Translation:vector3, Rotation:rotation, Scale:vector3}`.
+
+`/Verse.org/SpatialMath` is the LUF system. `/UnrealEngine.com` and
+`/Fortnite.com` carry their own legacy XYZ transform/vector types, so in a file
+importing both families **qualify the type** exactly like the digests do:
+`(/Verse.org/SpatialMath:)transform`. Mixing them silently misaligns motion.
 
 - Entity extensions: `GetGlobalTransform()`, `GetLocalTransform()`,
   `SetGlobalTransform(t)`, `SetLocalTransform(t)` (create a
@@ -105,12 +181,33 @@ prefab was created — build/push Verse changes first, then check
   (`SceneGraph.KeyframedMovement` module) over per-tick `SetGlobalTransform` —
   it interpolates client-side.
 
+### Ensure transform before KFM
+
+Empty pivots often have **no** `transform_component` (`local_transform_error`
+from `get_entity_info`). KFM cannot drive them until a transform exists.
+
+```verse
+# SetLocalTransform creates transform_component on demand if missing.
+Ent.SetLocalTransform(Ent.GetLocalTransform())
+```
+
+Do this (or add `transform_component` in the prefab) **before** attaching /
+playing `keyframed_movement_component`. Orbits and looping yaw run in **PIE**,
+not the idle editor viewport.
+
 ### Keyframed movement (the motion API — digest-check always)
+
+`keyframed_movement_component` is `class<final><final_super>(component)`: you
+**cannot subclass it**. A custom `constant_rotation_component` *holds* a KFM, it
+does not extend one. `SetKeyframes` rebases the path relative to the entity's
+**current** transform and does not start playback — position first, then
+`SetKeyframes`, then `Play()`. Full API in `movement_transforms`.
 
 ```verse
 using { /Verse.org/SceneGraph/KeyframedMovement }
 
 # NEVER creative_prop animation_controller for Scene Graph entities.
+# Ensure transform exists first (see above).
 KFM := keyframed_movement_component{Entity := Ent}
 Ent.AddComponents(array{KFM})
 KF := keyframed_movement_delta:
@@ -132,16 +229,39 @@ Confirm with `get_verse_api({"name": "keyframed_movement_component"})`.
 Mesh nose wrong (FBX axis): child entity + `SetLocalTransform` yaw offset;
 keep root heading = thrust/look.
 
+### Module name collision
+
+Do **not** put gameplay Verse under `Content/Verse/<Name>/` when
+`Content/<Name>/` already owns Assets module `<Name>` (e.g. content folder
+`SolarSystem`). Types may not resolve as editor/project components. Use a
+distinct folder/module (e.g. `Verse/SolarOrbits/`).
+
+After Verse build, project component object paths often look like:
+
+`/<Project>/_Verse.Verse-<Module>-<class_name>`
+
+Use that full path with `add_entity_component` when the short alias fails.
+Attach custom comps on the **prefab asset** when possible (see `prefab_only`).
+
 ### Built-in components worth knowing
+
+Full catalog: `skill_read_subskill("scenegraph", "components")`. Items,
+inventories and weapon granting: `skill_read_subskill("scenegraph", "itemization")`.
+
+Prototyping meshes with **no project asset**: `/UnrealEngine.com/BasicShapes`
+gives `cube`, `sphere`, `plane`, `cone`, `cylinder`, each a `mesh_component`
+subclass — `Shape := sphere{Entity := Ent}` then `Ent.AddComponents(array{Shape})`.
 
 `mesh_component` (Visible/Collidable/Queryable vars,
 EntityEnteredEvent/EntityExitedEvent), `particle_system_component`,
 `sound_component`, `light_component` family (spot/sphere/rect/capsule/
 directional), `camera_component` family + `camera_director_component`,
-`interactable_component` / `basic_interactable_component`,
-`possessable_component`, `rarity_component`, `stackable_component`,
-`transform_component`, `keyframed_movement_component`. Collision queries:
-`FindOverlapHits` / `FindSweepHits` with `collision_sphere/box/capsule/point`.
+`interactable_component` / `basic_interactable_component` (there is **no**
+Scene Graph `button_component`), `possessable_component`, `rarity_component`,
+`stackable_component` / `basic_stackable_component`, `transform_component`,
+`keyframed_movement_component`, `mass_component`, `icon_component`. Collision
+queries: `FindOverlapHits` / `FindSweepHits` with
+`collision_sphere/box/capsule/point`.
 
 ### Performance rules (Epic's guidance)
 
@@ -149,4 +269,5 @@ directional), `camera_component` family + `camera_director_component`,
   events instead of re-querying wide hierarchies during gameplay.
 - Keep interactions inside the prefab's local hierarchy; avoid broadcasting
   `SendDown` from the simulation root.
-- Put logic in components, not in `entity` subclasses — restructure-friendly.
+- One `TickEvents` subscription doing a little work beats several components
+  each ticking; cancel them all in `OnEndSimulation`.
