@@ -1,9 +1,9 @@
 {
   "id": "scenegraph",
   "kind": "plugin",
-  "version": "1.0.15",
+  "version": "1.0.19",
   "label": "UEFN Scene Graph",
-  "description": "UEFN Scene Graph entities, components, prefabs. Component lifecycle and per-frame TickEvents, movement/transform troubleshooting, itemization (granting weapons), prefab-only hard rules + component catalog. Bundles the scenegraph skill.",
+  "description": "UEFN Scene Graph entities, components, prefabs. Component lifecycle and per-frame TickEvents, movement/transform troubleshooting, itemization (stock weapons), custom Armory weapons (grant/equip/clear/mutate), prefab-only hard rules + component catalog. Bundles the scenegraph skill.",
   "min_app_version": "1.0.0",
   "default_enabled": true,
   "secret_keys": [],

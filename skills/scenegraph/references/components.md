@@ -110,7 +110,17 @@ subclass — `Ent.AddComponents(array{sphere{Entity := Ent}})`.
 |-------|------|
 | `item_component` | Marks an entity as an item. `GetParentInventory[]`, `IsEquipped[]`, `Equip`, `Unequip`, `Drop[]`, `PickUp[Inventory]`, `Categories`. |
 | `inventory_component` | Holds items. `AddItemDistribute` is the grant call; also `AddItem`, `RemoveItem`, `GetItems`, `FindItems`, `GetEquippedItems`, add/remove/equip events. On a player it sits on a **subentity** of the agent. |
-| `fort_item_pickup_interactable_component` | World pickup. Owning entity needs `item_component` + `mesh_component`; exposes `GetInteractorInventory(Agent)`. Gated `MinUploadedAtFNVersion := 4040`. |
+| `fort_item_pickup_interactable_component` | World pickup. Owning entity needs `item_component` + `mesh_component`; exposes `GetInteractorInventory(Agent)`. Gated `MinUploadedAtFNVersion := 4040`. Fields from `basic_interactable_component`: `CanInteractMessage`, `CannotInteractMessage`, `Cooldown`, `CooldownPerAgent`, `SuccessLimit`, `InteractableDuration`, `Enable`/`Disable`. |
+
+#### Armory (`/Fortnite.com/Armory`)
+
+| Alias | Role |
+|-------|------|
+| `fort_trace_weapon_component` | Tunable hitscan weapon (damage, fire rate, spread, recoil, magazine, FX, sounds). All have `Set*` Verse APIs — confirm with `get_verse_api`. |
+| `fort_weapon_component` | Base weapon: `IsHolstered`, `HolsterChangedEvent`. |
+
+Custom Armory Entity Prefabs (templates, mesh swap, grant/equip/clear):
+`skill_read_subskill("scenegraph", "custom_weapons")`.
 
 Recipes and the granting component: `skill_read_subskill("scenegraph", "itemization")`.
 

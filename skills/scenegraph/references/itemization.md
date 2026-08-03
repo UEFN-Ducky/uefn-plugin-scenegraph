@@ -69,6 +69,11 @@ qualify transform types, because `/UnrealEngine.com` carries its own copies
 | `/Fortnite.com/Itemization/FortniteRarities` | `Common`, `Uncommon`, `Rare`, `Epic`, `Legendary`, `Mythic`, `Exotic` |
 | `/Fortnite.com/Itemization/FortniteItemCategories` | category instances for `item_component.Categories` |
 
+**Custom Armory weapons** (re-skin + tune AR/pistol/shotgun/SMG prefabs, not
+stock `AssaultRifle_BR_*` classes) → load
+`skill_read_subskill("scenegraph", "custom_weapons")`. This file covers stock
+`/Fortnite.com/Weapons` grants and shared inventory/pickup APIs.
+
 Each weapon is `class<final><concrete>(entity)`, so `{}` constructs one. Find
 them without guessing:
 

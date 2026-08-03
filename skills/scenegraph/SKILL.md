@@ -1,11 +1,11 @@
 ---
 source_plugin_id: scenegraph
 name: scenegraph
-description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, and grant items/weapons through inventories"
-license: All Rights Reserved
+description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, and author custom Armory weapon prefabs"
+license: Ducky Source-Available License v1.0
 metadata:
   label: "UEFN Scene Graph"
-  version: 6
+  version: 8
   author: UEFN-Ducky
   copyright: Copyright 2026 UEFN-Ducky
   allow_redistribute: false
@@ -136,11 +136,14 @@ free-text hunts, `list_verse_modules` for the module map.
 - **No Scene Graph `button_component`.** Player interaction =
   `interactable_component` / `basic_interactable_component`. Creative
   `button_device` is a device, not an entity component. Catalog: `components`.
-- **Weapons and items are entities, not devices.** Every Fortnite weapon is a
-  concrete `entity` class (`/Fortnite.com/Weapons`, `/Fortnite.com/Items`), so
-  granting is `Inventory.AddItemDistribute(AssaultRifle_BR_CH4S1_Rare{})` after
+- **Weapons and items are entities, not devices.** Stock Fortnite guns are
+  concrete classes under `/Fortnite.com/Weapons` / `/Fortnite.com/Items` —
+  grant with `Inventory.AddItemDistribute(AssaultRifle_BR_CH4S1_Rare{})` after
   finding the agent's descendant `inventory_component`. Never `spawn_actor` a
-  weapon class. Recipes: `itemization`.
+  weapon class. Recipes: `itemization`. **Custom player firearms** are Entity
+  Prefabs from `/Fortnite.com/Armory` templates (`assault_rifle_template`,
+  pistol / shotgun / SMG) with `fort_trace_weapon_component` — mesh swap,
+  tuning, world pickup, and Verse grant/equip/clear/mutate: `custom_weapons`.
 - **Mesh axis quirks**: put FBX yaw/pitch offsets on a **child** mesh entity
   (`SetLocalTransform`), keep root entity yaw = thrust/look heading.
 - **SpatialMath axes, not Unreal axes**: translations/scales are
@@ -193,4 +196,5 @@ Load with `skill_read_subskill("scenegraph", "<id>")`:
 - `components` — full builtin catalog, asset vs plain, `BasicShapes`, itemization comps, no `button_component`
 - `prefab_only` — prefab-asset-first hard rules, MCP level-vs-tab limit, banned repackage, orbit recipe
 - `movement_transforms` — why it isn't moving: local vs global, origins/attach, full KFM API, LUF axes, known transform bugs
-- `itemization` — items and inventories, granting weapons from `/Fortnite.com/Weapons`, pickups, equipping
+- `itemization` — items and inventories, granting stock weapons from `/Fortnite.com/Weapons`, pickups, equipping
+- `custom_weapons` — custom Armory Entity Prefabs (AR/pistol/shotgun/SMG), mesh/pivot/collision, `fort_trace_weapon_component`, Verse grant/equip/clear/mutate/has
