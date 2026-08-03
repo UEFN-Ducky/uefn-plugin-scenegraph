@@ -324,7 +324,9 @@ Notes:
 - `AddItemDistribute` / `RemoveItem` return `result` — not failable `if`
   wrappers; use `case` (or the unwrap your build documents).
 - Holster watch: once per player via `IsWatching`; clean on `PlayerRemoved`.
-- Wire buttons with `wire_verse_device_ref` after placing the device.
+- Wire buttons with `wire_verse_device_ref` after placing the device —
+  **one field per turn** (`skill_read_subskill("uefn", "batch_commands")`).
+  Never same-turn multi-wire.
 
 ## Limits and pitfalls
 

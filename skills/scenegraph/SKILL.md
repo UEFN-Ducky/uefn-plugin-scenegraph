@@ -5,13 +5,19 @@ description: "UEFN Scene Graph — create and edit entities, components, and pre
 license: Ducky Source-Available License v1.0
 metadata:
   label: "UEFN Scene Graph"
-  version: 8
+  version: 9
   author: UEFN-Ducky
   copyright: Copyright 2026 UEFN-Ducky
   allow_redistribute: false
 ---
 
 # UEFN Scene Graph — entities, components, prefabs
+
+**CRITICAL — editor mutations are SERIAL:** one heavy MCP call
+(`create_entity` / `instantiate_prefab` / `spawn_actor` / `wire_verse_device_ref` /
+`save_current_level` / …) → wait → next. Never parallel or same-turn multi —
+freezes UEFN. Details: `skill_read_subskill("uefn", "batch_commands")`. Button
+devices for grants: Creative devices + serial wire (`creative_devices`).
 
 Scene Graph is UEFN's entity-component system: **entities** are containers,
 **components** add behavior/visuals (one component per class per entity), and
