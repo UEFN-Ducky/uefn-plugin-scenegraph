@@ -71,8 +71,13 @@ Hard rules and orbit pitfalls: `skill_read_subskill("scenegraph", "prefab_only")
 - `create_prefab_from_entities` packages **loose** named entities and REPLACES
   them in the level with an instance of the **new** prefab. The asset saves
   immediately; its Verse class appears in Assets.digest.verse only after the
-  next Verse build. Fails if the asset path already exists — pick a new
-  `prefab_name`.
+  next Verse build, and is usable (`using`, `add_entity_component`) only after
+  the Verse VM relinks — a fresh digest is **not** enough. Wait out
+  `[WinError 10054]` (build started); never retry the compile. If linking
+  fails with `Script error 9002`, use the comment-out → rebuild → uncomment
+  procedure in `skill_read_subskill("uefn", "verse_build_lifecycle")`.
+  Fails if the asset path already exists — pick a new `prefab_name`.
+  One editor mutator per assistant message; `save_directory` every 5–10 prefabs.
 - **NEVER** `create_prefab_from_entities` on an already-placed `EP_*` instance
   (or its children) to “save overrides back” — that can collapse the hierarchy
   into an empty shell. Destroy broken instances, re-`instantiate_prefab` the

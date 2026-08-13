@@ -1,11 +1,11 @@
 ---
 source_plugin_id: scenegraph
 name: scenegraph
-description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, and author custom Armory weapon prefabs"
+description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, author custom Armory weapon prefabs, and author custom non-weapon item prefabs"
 license: Ducky Source-Available License v1.0
 metadata:
   label: "UEFN Scene Graph"
-  version: 9
+  version: 13
   author: UEFN-Ducky
   copyright: Copyright 2026 UEFN-Ducky
   allow_redistribute: false
@@ -150,6 +150,10 @@ free-text hunts, `list_verse_modules` for the module map.
   Prefabs from `/Fortnite.com/Armory` templates (`assault_rifle_template`,
   pistol / shotgun / SMG) with `fort_trace_weapon_component` — mesh swap,
   tuning, world pickup, and Verse grant/equip/clear/mutate: `custom_weapons`.
+  **Custom non-weapon items** are blank Entity Prefabs with an itemization
+  shell (`item_component` + pickup/description/icon/mesh) plus **your Verse
+  components** for any equipped/dropped behavior (categories/stack/rarity,
+  KFM, grant/equip) — no Creative granter path yet: `custom_items`.
 - **Mesh axis quirks**: put FBX yaw/pitch offsets on a **child** mesh entity
   (`SetLocalTransform`), keep root entity yaw = thrust/look heading.
 - **SpatialMath axes, not Unreal axes**: translations/scales are
@@ -204,3 +208,4 @@ Load with `skill_read_subskill("scenegraph", "<id>")`:
 - `movement_transforms` — why it isn't moving: local vs global, origins/attach, full KFM API, LUF axes, known transform bugs
 - `itemization` — items and inventories, granting stock weapons from `/Fortnite.com/Weapons`, pickups, equipping
 - `custom_weapons` — custom Armory Entity Prefabs (AR/pistol/shotgun/SMG), mesh/pivot/collision, `fort_trace_weapon_component`, Verse grant/equip/clear/mutate/has
+- `custom_items` — fully custom non-weapon Entity Prefabs: itemization shell + Verse components for any behavior, categories/stack/rarity, KFM, equipped logic, Verse grant (no Creative granter yet)

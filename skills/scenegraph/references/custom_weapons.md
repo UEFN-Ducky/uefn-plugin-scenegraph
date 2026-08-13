@@ -20,6 +20,7 @@ with `get_verse_api` / `search_verse_digest` before shipping.
 |------|------|
 | Stock Fortnite gun grant / pickup | `skill_read_subskill("scenegraph", "itemization")` |
 | **Custom mesh + tunable AR/pistol/shotgun/SMG** | **this file** |
+| Custom non-weapon item (pickup / icon / mesh) | `skill_read_subskill("scenegraph", "custom_items")` |
 | Soft persist bags + Creative Item Granter | `skill_read_subskill("verse", "sys_inventory")` |
 | NPC combat / projectiles | Store `npc-ai` / `sys_npc_ai` |
 | Cosmetic weapon on NPC skeleton | `skill_read_subskill("animation", "npc_items")` |
@@ -358,6 +359,7 @@ Notes:
 | Need | Skill | Tools |
 |------|-------|-------|
 | This path | scenegraph `custom_weapons` | entity/prefab tools + Verse digests |
+| Custom non-weapon items | scenegraph `custom_items` | same |
 | Stock FN guns | scenegraph `itemization` | same |
 | Soft inventory / shops | verse `sys_inventory` / `sys_economy` | device wire / granter fields |
 | Mesh / mats / Niagara | modeling, materials, vfx | domain MCP tools |

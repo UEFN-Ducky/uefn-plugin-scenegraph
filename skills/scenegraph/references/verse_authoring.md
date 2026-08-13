@@ -139,7 +139,7 @@ Prefabs created in the editor generate a Verse class (and an `entity_prefab`
 asset ref) in **Assets.digest.verse** on the next Verse build:
 
 ```verse
-# Assets.digest.verse (generated — never edit):
+# Assets.digest.verse (generated — NEVER edit / write / delete):
 #   P_LightPost := class<final>(entity):
 #   P_LightPost_asset : entity_prefab = external {}
 ```

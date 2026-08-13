@@ -71,8 +71,11 @@ qualify transform types, because `/UnrealEngine.com` carries its own copies
 
 **Custom Armory weapons** (re-skin + tune AR/pistol/shotgun/SMG prefabs, not
 stock `AssaultRifle_BR_*` classes) → load
-`skill_read_subskill("scenegraph", "custom_weapons")`. This file covers stock
-`/Fortnite.com/Weapons` grants and shared inventory/pickup APIs.
+`skill_read_subskill("scenegraph", "custom_weapons")`. **Custom non-weapon
+Entity Prefab items** (mesh/icon/pickup, KFM spin, equipped detect) →
+`skill_read_subskill("scenegraph", "custom_items")`. This file covers stock
+`/Fortnite.com/Weapons` / `/Fortnite.com/Items` grants and shared
+inventory/pickup APIs.
 
 Each weapon is `class<final><concrete>(entity)`, so `{}` constructs one. Find
 them without guessing:

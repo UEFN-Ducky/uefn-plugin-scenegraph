@@ -111,6 +111,7 @@ subclass — `Ent.AddComponents(array{sphere{Entity := Ent}})`.
 | `item_component` | Marks an entity as an item. `GetParentInventory[]`, `IsEquipped[]`, `Equip`, `Unequip`, `Drop[]`, `PickUp[Inventory]`, `Categories`. |
 | `inventory_component` | Holds items. `AddItemDistribute` is the grant call; also `AddItem`, `RemoveItem`, `GetItems`, `FindItems`, `GetEquippedItems`, add/remove/equip events. On a player it sits on a **subentity** of the agent. |
 | `fort_item_pickup_interactable_component` | World pickup. Owning entity needs `item_component` + `mesh_component`; exposes `GetInteractorInventory(Agent)`. Gated `MinUploadedAtFNVersion := 4040`. Fields from `basic_interactable_component`: `CanInteractMessage`, `CannotInteractMessage`, `Cooldown`, `CooldownPerAgent`, `SuccessLimit`, `InteractableDuration`, `Enable`/`Disable`. |
+| `fort_inventory_component` (+ `fort_inventory_*` subclasses) | **Player inventory** types (weapon hotbar, resources, currencies, ammo, …) — not components for custom item prefabs. Custom items use `item_component` (+ optional `Categories`). |
 
 #### Armory (`/Fortnite.com/Armory`)
 
@@ -121,6 +122,9 @@ subclass — `Ent.AddComponents(array{sphere{Entity := Ent}})`.
 
 Custom Armory Entity Prefabs (templates, mesh swap, grant/equip/clear):
 `skill_read_subskill("scenegraph", "custom_weapons")`.
+
+Custom non-weapon Entity Prefabs (pickup / description / icon / mesh, KFM spin,
+equipped detect): `skill_read_subskill("scenegraph", "custom_items")`.
 
 Recipes and the granting component: `skill_read_subskill("scenegraph", "itemization")`.
 
@@ -141,8 +145,14 @@ Resolution order in `add_entity_component`:
    `/<Project>/_Verse.Verse-<Module>-<class_name>`  
    Example: `/catland/_Verse.Verse-SolarOrbits-constant_rotation_component`
 
-If short name fails, load via full path from `execute_python` /
-`ObjectIterator` or the `_Verse` package listing — do not invent paths.
+If short name fails, call `list_scene_component_classes` (and `reload_listener`
+if the list is stale after a Verse relink) — do not invent paths and do not
+walk `ObjectIterator` via `execute_python` (freezes the editor).
+
+After `add_entity_component`, check `class_path`. A `VERSE_DEAD_*` class under
+`/Engine/Transient` is a stale VM class: `reload_listener` → destroy and
+recreate the entity → attach again. Details:
+`skill_read_subskill("uefn", "verse_build_lifecycle")`.
 
 ---
 
