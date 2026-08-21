@@ -28,6 +28,7 @@ Not Creative Item Granters / Item Spawners. Not Armory weapon templates
 |------|------|
 | Stock Fortnite gun / item grant | `skill_read_subskill("scenegraph", "itemization")` |
 | **Fully custom non-weapon item (mesh/icon + Verse logic)** | **this file** |
+| Template ability (Spicy Sprint / AbilityElements / IA_Sprint) | `skill_read_subskill("scenegraph", "template_abilities")` |
 | Custom Armory firearm (AR/pistol/shotgun/SMG) | `skill_read_subskill("scenegraph", "custom_weapons")` |
 | Soft persist bags + Creative Item Granter | `skill_read_subskill("verse", "sys_inventory")` |
 

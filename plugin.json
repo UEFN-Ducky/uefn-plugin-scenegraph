@@ -1,9 +1,9 @@
 {
   "id": "scenegraph",
   "kind": "plugin",
-  "version": "1.0.24",
+  "version": "1.0.26",
   "label": "UEFN Scene Graph",
-  "description": "UEFN Scene Graph entities, components, prefabs. Component lifecycle and per-frame TickEvents, movement/transform troubleshooting, itemization (stock weapons), custom Armory weapons (grant/equip/clear/mutate), custom items that can do anything (shell + Verse behavior, categories/stack/rarity, KFM, equipped logic), prefab-only hard rules + component catalog. Bundles the scenegraph skill. Serial editor ops (one MCP call per turn).",
+  "description": "UEFN Scene Graph prefab helpers plus template abilities. Entity CRUD uses nested Epic UEFN MCP (unreal__*). Bundles the scenegraph skill. Serial editor ops (one MCP call per turn).",
   "min_app_version": "1.0.0",
   "default_enabled": true,
   "secret_keys": [],
@@ -12,34 +12,14 @@
       "category": "scenegraph",
       "tools": [
         "scene_graph_capabilities",
-        "list_entities",
-        "get_entity_info",
-        "list_scene_component_classes",
-        "get_selected_entities",
-        "select_entities",
-        "create_entity",
-        "set_entity_transform",
-        "add_entity_component",
-        "remove_entity_component",
-        "set_entity_component_property",
-        "get_entity_component_property",
-        "rename_entity",
-        "set_entity_parent",
-        "duplicate_entity",
-        "destroy_entity",
         "create_empty_prefab",
         "create_prefab_from_entities",
         "instantiate_prefab",
         "convert_actors_to_entities"
       ],
-      "intent_pattern": "\\b(scene\\s*graph|entity|prefab|component)\\b",
+      "intent_pattern": "\\b(prefab|entity\\s*prefab)\\b",
       "plan_tools": [
-        "scene_graph_capabilities",
-        "list_entities",
-        "get_entity_info",
-        "list_scene_component_classes",
-        "get_selected_entities",
-        "get_entity_component_property"
+        "scene_graph_capabilities"
       ]
     },
     "walkthrough": {
@@ -51,7 +31,7 @@
         {
           "target": "settings.store.root",
           "title": "Scene Graph tools ready",
-          "body": "Scene Graph MCP tools are live. Ask to create/edit entities, components, or prefabs in the editor.",
+          "body": "Scene Graph prefab tools are live. Entity CRUD is nested Epic UEFN MCP (unreal__*). Ask to package or place prefabs.",
           "advance": "next",
           "mode": "rect"
         }

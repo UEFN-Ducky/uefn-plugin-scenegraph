@@ -73,7 +73,9 @@ qualify transform types, because `/UnrealEngine.com` carries its own copies
 stock `AssaultRifle_BR_*` classes) → load
 `skill_read_subskill("scenegraph", "custom_weapons")`. **Custom non-weapon
 Entity Prefab items** (mesh/icon/pickup, KFM spin, equipped detect) →
-`skill_read_subskill("scenegraph", "custom_items")`. This file covers stock
+`skill_read_subskill("scenegraph", "custom_items")`. **Template abilities**
+(Spicy Sprint, `fort_item_ability_component`, AbilityElements) →
+`skill_read_subskill("scenegraph", "template_abilities")`. This file covers stock
 `/Fortnite.com/Weapons` / `/Fortnite.com/Items` grants and shared
 inventory/pickup APIs.
 

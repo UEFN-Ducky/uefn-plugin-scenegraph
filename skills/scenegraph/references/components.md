@@ -112,6 +112,7 @@ subclass — `Ent.AddComponents(array{sphere{Entity := Ent}})`.
 | `inventory_component` | Holds items. `AddItemDistribute` is the grant call; also `AddItem`, `RemoveItem`, `GetItems`, `FindItems`, `GetEquippedItems`, add/remove/equip events. On a player it sits on a **subentity** of the agent. |
 | `fort_item_pickup_interactable_component` | World pickup. Owning entity needs `item_component` + `mesh_component`; exposes `GetInteractorInventory(Agent)`. Gated `MinUploadedAtFNVersion := 4040`. Fields from `basic_interactable_component`: `CanInteractMessage`, `CannotInteractMessage`, `Cooldown`, `CooldownPerAgent`, `SuccessLimit`, `InteractableDuration`, `Enable`/`Disable`. |
 | `fort_inventory_component` (+ `fort_inventory_*` subclasses) | **Player inventory** types (weapon hotbar, resources, currencies, ammo, …) — not components for custom item prefabs. Custom items use `item_component` (+ optional `Categories`). |
+| `fort_item_ability_component` | Template abilities on an item (`ItemAbilities` / `ItemEquippedAbilities`, InputTrigger, TargetQuery, AbilityElements). Digest-gated experimental. Recipes: `template_abilities`. |
 
 #### Armory (`/Fortnite.com/Armory`)
 
@@ -125,6 +126,9 @@ Custom Armory Entity Prefabs (templates, mesh swap, grant/equip/clear):
 
 Custom non-weapon Entity Prefabs (pickup / description / icon / mesh, KFM spin,
 equipped detect): `skill_read_subskill("scenegraph", "custom_items")`.
+
+Template abilities (`fort_template_ability`, status-effect AbilityElements):
+`skill_read_subskill("scenegraph", "template_abilities")`.
 
 Recipes and the granting component: `skill_read_subskill("scenegraph", "itemization")`.
 

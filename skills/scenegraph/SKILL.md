@@ -1,11 +1,11 @@
 ---
 source_plugin_id: scenegraph
 name: scenegraph
-description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, author custom Armory weapon prefabs, and author custom non-weapon item prefabs"
+description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, author custom Armory weapon prefabs, custom non-weapon item prefabs, and Fortnite template abilities (fort_template_ability / fort_item_ability_component)"
 license: Ducky Source-Available License v1.0
 metadata:
   label: "UEFN Scene Graph"
-  version: 13
+  version: 14
   author: UEFN-Ducky
   copyright: Copyright 2026 UEFN-Ducky
   allow_redistribute: false
@@ -13,11 +13,18 @@ metadata:
 
 # UEFN Scene Graph — entities, components, prefabs
 
+**Entity CRUD is nested Epic MCP (`unreal__*`).** Ducky keeps prefab helpers
+(`create_empty_prefab`, `create_prefab_from_entities`, `instantiate_prefab`,
+`convert_actors_to_entities`) plus `scene_graph_capabilities`. Epic Python
+toolsets speak **XYZ**; do not pass SpatialMath LUF into `unreal__*` calls.
+If `epic_mcp_online` is false, recites Epic setup steps — never `create_entity` /
+`list_entities` on the Ducky listener.
+
 **CRITICAL — editor mutations are SERIAL:** one heavy MCP call
-(`create_entity` / `instantiate_prefab` / `spawn_actor` / `wire_verse_device_ref` /
+(`unreal__*` / `instantiate_prefab` / `spawn_actor` / `wire_verse_device_ref` /
 `save_current_level` / …) → wait → next. Never parallel or same-turn multi —
 freezes UEFN. Details: `skill_read_subskill("uefn", "batch_commands")`. Button
-devices for grants: Creative devices + serial wire (`creative_devices`).
+devices for grants: nested Epic Creative devices (`creative_devices`).
 
 Scene Graph is UEFN's entity-component system: **entities** are containers,
 **components** add behavior/visuals (one component per class per entity), and
@@ -37,11 +44,8 @@ mutating a placed level instance as the primary workflow — see
 
 | Kind | Tools |
 |------|-------|
-| **PROBE** | `scene_graph_capabilities` |
-| **READ** | `list_entities`, `get_entity_info`, `list_scene_component_classes`, `get_selected_entities`, `get_entity_component_property` |
-| **CREATE** | `create_entity`, `add_entity_component`, `create_empty_prefab`, `create_prefab_from_entities`, `instantiate_prefab` |
-| **CHANGE** | `set_entity_transform`, `set_entity_component_property`, `rename_entity`, `set_entity_parent`, `duplicate_entity`, `select_entities` |
-| **DESTROY** | `destroy_entity` (approval-gated), `remove_entity_component`, `convert_actors_to_entities` (approval-gated) |
+| **PROBE** | `scene_graph_capabilities` (prefab helpers); entity list/create via nested Epic `unreal__*` |
+| **PREFAB** | `create_empty_prefab`, `create_prefab_from_entities`, `instantiate_prefab`, `convert_actors_to_entities` |
 | **VERSE API** | `get_verse_api`, `search_verse_digest`, `list_verse_modules` |
 
 Always `scene_graph_capabilities({})` first — the scripting subsystem only
@@ -154,6 +158,8 @@ free-text hunts, `list_verse_modules` for the module map.
   shell (`item_component` + pickup/description/icon/mesh) plus **your Verse
   components** for any equipped/dropped behavior (categories/stack/rarity,
   KFM, grant/equip) — no Creative granter path yet: `custom_items`.
+  **Template abilities** (Spicy Sprint, status-effect AbilityElements,
+  `fort_item_ability_component` + `fort_template_ability`) — `template_abilities`.
 - **Mesh axis quirks**: put FBX yaw/pitch offsets on a **child** mesh entity
   (`SetLocalTransform`), keep root entity yaw = thrust/look heading.
 - **SpatialMath axes, not Unreal axes**: translations/scales are
@@ -209,3 +215,4 @@ Load with `skill_read_subskill("scenegraph", "<id>")`:
 - `itemization` — items and inventories, granting stock weapons from `/Fortnite.com/Weapons`, pickups, equipping
 - `custom_weapons` — custom Armory Entity Prefabs (AR/pistol/shotgun/SMG), mesh/pivot/collision, `fort_trace_weapon_component`, Verse grant/equip/clear/mutate/has
 - `custom_items` — fully custom non-weapon Entity Prefabs: itemization shell + Verse components for any behavior, categories/stack/rarity, KFM, equipped logic, Verse grant (no Creative granter yet)
+- `template_abilities` — Fortnite template abilities: `fort_template_ability` Verse class, `fort_item_ability_component` on an item prefab, AbilityElements (burn/pepper), IA_Sprint, hotbar grant device
