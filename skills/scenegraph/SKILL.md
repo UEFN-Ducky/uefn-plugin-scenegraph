@@ -2,23 +2,27 @@
 source_plugin_id: scenegraph
 name: scenegraph
 description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, author custom Armory weapon prefabs, custom non-weapon item prefabs, and Fortnite template abilities (fort_template_ability / fort_item_ability_component)"
-license: Ducky Source-Available License v1.0
+license: MIT
 metadata:
   label: "UEFN Scene Graph"
-  version: 14
+  version: 17
+  managed_by: uefn-ducky
   author: UEFN-Ducky
-  copyright: Copyright 2026 UEFN-Ducky
-  allow_redistribute: false
+  copyright: Copyright 2026 Mindful Path Company, LLC
+  allow_redistribute: true
 ---
 
 # UEFN Scene Graph — entities, components, prefabs
 
-**Entity CRUD is nested Epic MCP (`unreal__*`).** Ducky keeps prefab helpers
-(`create_empty_prefab`, `create_prefab_from_entities`, `instantiate_prefab`,
-`convert_actors_to_entities`) plus `scene_graph_capabilities`. Epic Python
-toolsets speak **XYZ**; do not pass SpatialMath LUF into `unreal__*` calls.
-If `epic_mcp_online` is false, recites Epic setup steps — never `create_entity` /
-`list_entities` on the Ducky listener.
+**Entity CRUD is nested Epic UEFN MCP.** Settings → MCPs → **UEFN MCP (Epic)**.
+Use `unreal__list_toolsets` → `unreal__describe_toolset` → `unreal__call_tool` into
+`ValkyrieToolset.EntityToolset` (`FindEntities`, `CreateEntity`, `AddComponent`,
+`SetEntityTransform`, …). There are no flat `unreal__create_entity` MCP tools.
+Ducky keeps prefab helpers (`create_empty_prefab`, `create_prefab_from_entities`,
+`instantiate_prefab`, `convert_actors_to_entities`) plus `scene_graph_capabilities`.
+Epic toolsets speak **XYZ**; do not pass SpatialMath LUF into Epic `arguments`.
+If `epic_mcp_online` is false, recite Epic setup steps — never pruned Ducky
+`create_entity` / `list_entities`. Map: `skill_read_subskill("uefn", "epic_mcp")`.
 
 **CRITICAL — editor mutations are SERIAL:** one heavy MCP call
 (`unreal__*` / `instantiate_prefab` / `spawn_actor` / `wire_verse_device_ref` /
@@ -44,27 +48,35 @@ mutating a placed level instance as the primary workflow — see
 
 | Kind | Tools |
 |------|-------|
-| **PROBE** | `scene_graph_capabilities` (prefab helpers); entity list/create via nested Epic `unreal__*` |
+| **PROBE** | `scene_graph_capabilities` (prefab helpers); entity CRUD via Epic `ValkyrieToolset.EntityToolset` (`skill_read_subskill("uefn", "epic_mcp")`) |
 | **PREFAB** | `create_empty_prefab`, `create_prefab_from_entities`, `instantiate_prefab`, `convert_actors_to_entities` |
 | **VERSE API** | `get_verse_api`, `search_verse_digest`, `list_verse_modules` |
 
-Always `scene_graph_capabilities({})` first — the scripting subsystem only
-exists on newer UEFN builds. If it is missing the tools say so; do not retry.
+Always `scene_graph_capabilities({})` first for prefab helper availability. Entity
+list/create uses Epic — not Ducky `list_entities` / `create_entity`.
 
 ## Golden path (build an entity in the editor)
 
 ```
-scene_graph_capabilities({})                                   # PROBE
-list_entities({})                                              # READ -> see what's there
-create_entity({"name": "Lamp", "translation": [500, 0, 0]})    # CREATE
-add_entity_component({"entity": "Lamp", "component_class": "mesh_component",
-    "asset_path": "/MyProject/Meshes/SM_Lamp.SM_Lamp"})        # mesh needs a PROJECT asset
-add_entity_component({"entity": "Lamp",
-    "component_class": "spot_light_component"})                # plain component: no asset
-set_entity_component_property({"entity": "Lamp",
-    "component_class": "mesh_component",
-    "prop": "Collidable", "value": true})                      # digest-name property
-save_current_level()
+scene_graph_capabilities({})
+unreal__describe_toolset({ "toolset_name": "ValkyrieToolset.EntityToolset" })
+unreal__call_tool({
+  "toolset_name": "ValkyrieToolset.EntityToolset",
+  "tool_name": "FindEntities",
+  "arguments": {}
+})
+unreal__call_tool({
+  "toolset_name": "ValkyrieToolset.EntityToolset",
+  "tool_name": "CreateEntity",
+  "arguments": { … }   # XYZ; follow describe_toolset schema / refPath
+})
+unreal__call_tool({
+  "toolset_name": "ValkyrieToolset.EntityToolset",
+  "tool_name": "AddComponent",
+  "arguments": { … }
+})
+# Then SetComponentProperty / SetEntityTransform via the same toolset as needed.
+# Prefab packaging stays on Ducky helpers below.
 ```
 
 ## Golden path (Entity Prefab — asset first, then place)
@@ -153,7 +165,9 @@ free-text hunts, `list_verse_modules` for the module map.
   weapon class. Recipes: `itemization`. **Custom player firearms** are Entity
   Prefabs from `/Fortnite.com/Armory` templates (`assault_rifle_template`,
   pistol / shotgun / SMG) with `fort_trace_weapon_component` — mesh swap,
-  tuning, world pickup, and Verse grant/equip/clear/mutate: `custom_weapons`.
+  tuning, and Verse grant/equip/clear/mutate: `custom_weapons`. Owned persist +
+  `collectible_object_device` pickup + canvas shop + rejoin: verse
+  `sys_owned_weapons`.
   **Custom non-weapon items** are blank Entity Prefabs with an itemization
   shell (`item_component` + pickup/description/icon/mesh) plus **your Verse
   components** for any equipped/dropped behavior (categories/stack/rarity,
@@ -213,6 +227,6 @@ Load with `skill_read_subskill("scenegraph", "<id>")`:
 - `prefab_only` — prefab-asset-first hard rules, MCP level-vs-tab limit, banned repackage, orbit recipe
 - `movement_transforms` — why it isn't moving: local vs global, origins/attach, full KFM API, LUF axes, known transform bugs
 - `itemization` — items and inventories, granting stock weapons from `/Fortnite.com/Weapons`, pickups, equipping
-- `custom_weapons` — custom Armory Entity Prefabs (AR/pistol/shotgun/SMG), mesh/pivot/collision, `fort_trace_weapon_component`, Verse grant/equip/clear/mutate/has
+- `custom_weapons` — custom Armory Entity Prefabs (AR/pistol/shotgun/SMG), mesh/pivot/collision, `fort_trace_weapon_component`, Verse grant: WaitForInventory + AddItemDistribute then GetParentInventory/PickUp/Equip (not AddResult.Ok). Owned collectible + canvas shop + persist → verse `sys_owned_weapons`
 - `custom_items` — fully custom non-weapon Entity Prefabs: itemization shell + Verse components for any behavior, categories/stack/rarity, KFM, equipped logic, Verse grant (no Creative granter yet)
 - `template_abilities` — Fortnite template abilities: `fort_template_ability` Verse class, `fort_item_ability_component` on an item prefab, AbilityElements (burn/pepper), IA_Sprint, hotbar grant device
