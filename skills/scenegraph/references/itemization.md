@@ -138,6 +138,13 @@ GrantRifle(Agent:agent):void =
 If your component already derives from `fort_item_pickup_interactable_component`
 there is a cleaner lookup: `GetInteractorInventory(Agent)<transacts><decides>:inventory_component`.
 
+**Custom Armory prefabs (`EP_*`) are not stock WIDs.** `AddItemDistribute` can
+succeed while the gun is still unparented. Parent/equip is
+`GetParentInventory[]` then `Equip()`, else `PickUp[Inventory]` then
+`Equip()` — `skill_read_subskill("scenegraph", "custom_weapons")`. Owned
+collectible + persist + shop: `skill_read_subskill("verse", "sys_owned_weapons")`.
+`item_granter_device` cannot grant a custom Armory prefab.
+
 ### Recipe C — a pickup in the world
 
 `fort_item_pickup_interactable_component` (`/Fortnite.com/Itemization`, gated
@@ -190,7 +197,9 @@ the add, plus `CanMergeInto[]` / `MergeInto[]` / `AllowMergeInto[]` /
 - Inventories need an itemization inventory configuration on Island Settings
   (`CustomInventoryConfiguration`, e.g. the BR-style asset — see
   `skill_read_subskill("islandsettings", "recipes")`). Without one, grants can
-  succeed in Verse and show nothing on the HUD.
+  succeed in Verse and show nothing on the HUD. Custom Armory grant parent/equip
+  is `GetParentInventory` / `PickUp` / `Equip` (`custom_weapons` /
+  `sys_owned_weapons`), not `case AddResult.Ok`.
 - Subscribe to inventory events in `OnBeginSimulation` and cancel in
   `OnEndSimulation` (`verse_authoring`).
 - Check the `MinUploadedAtFNVersion` gates above before relying on a call in a

@@ -1,5 +1,5 @@
 ---
-description: "Custom Scene Graph Armory weapons — Entity Prefab templates (AR/pistol/shotgun/SMG), fort_trace_weapon_component tuning, mesh/collision/pivot, world pickup without Verse, and creative_device grant/equip/clear/mutate/has via tags"
+description: "Custom Scene Graph Armory weapons — Entity Prefab templates (AR/pistol/shotgun/SMG), fort_trace_weapon_component tuning, mesh/collision/pivot, and Verse grant/equip/clear/mutate/has. Owned persist + collectible + canvas shop → verse sys_owned_weapons"
 metadata:
   order: 7
   label: "Custom Armory weapons"
@@ -22,12 +22,13 @@ with `get_verse_api` / `search_verse_digest` before shipping.
 | **Custom mesh + tunable AR/pistol/shotgun/SMG** | **this file** |
 | Custom non-weapon item (pickup / icon / mesh) | `skill_read_subskill("scenegraph", "custom_items")` |
 | Soft persist bags + Creative Item Granter | `skill_read_subskill("verse", "sys_inventory")` |
+| Owned guns (persist, collectible pickup, canvas shop, rejoin) | `skill_read_subskill("verse", "sys_owned_weapons")` |
 | NPC combat / projectiles | Store `npc-ai` / `sys_npc_ai` |
 | Cosmetic weapon on NPC skeleton | `skill_read_subskill("animation", "npc_items")` |
 
-**No Verse required for loot on the ground.** Drag the prefab into the level;
-the player walks up and picks it up. Verse is only for grant / equip / clear /
-mutate / has-check.
+This file authors the prefab and the grant API. Pickup / shop / save / rejoin
+is **one** Verse loop: `sys_owned_weapons` (Creative `collectible_object_device`
++ canvas shop — not dragging this prefab into the level).
 
 ## Project gates
 
@@ -132,7 +133,8 @@ muzzle/tracer → `vfx`.
 
 ## World use and variants
 
-- Drag the Entity Prefab into the level for world loot (pickup can feel iffy).
+- Owned pickup is a Creative **Collectible Object** (`collectible_object_device`)
+  plus `sys_owned_weapons` — do not drag this prefab into the level as loot.
 - Verify look in **free camera** (third person) before trusting first person —
   first person is often bugged for custom Armory meshes.
 - Scene Graph is modular: **Alt+drag** placed instances and tune FireRate /
@@ -192,11 +194,14 @@ so it does not run twice (known double-print bug).
 
 ### Five operations
 
-1. **Grant** — inventory helper → construct prefab →
-   `GetComponent[fort_trace_weapon_component]` / FindDescendant →
-   `SetDamage` / `SetFireRate` from grant editables → `AddItemDistribute` →
-   on success `item_component.Equip()` + start holster watch once; on failure
-   `RemoveFromParent()`.
+1. **Grant** — wait until `inventory_component` exists (descendant of the
+   agent, up to 5s) → construct a **fresh** prefab → optional
+   `SetDamage` / `SetFireRate` → `AddItemDistribute` → **then**
+   `item_component.GetParentInventory[]` + `Equip()`, else
+   `PickUp[Inventory]` + `Equip()`, else `RemoveFromParent()`.
+   `AddResult.Ok` / `GetSuccess[]` is **not** parented — do not `case` the
+   distribute result and Equip only on Ok. Owned persist/pickup/rejoin uses
+   this same parent/equip: verse `sys_owned_weapons`.
 2. **Change stats** — every tagged gun in inventory →
    `SetDamage` / `SetFireRate` from change-to editables.
 3. **Equip** — tagged item already in inventory → `Equip()`.
@@ -210,13 +215,13 @@ API (all Scene Graph setters for the weapon live there).
 ### Compiling skeleton (confirm names before ship)
 
 Replace `GnomeGun` / `my_gun_tag` with your Assets.digest / tag names after
-compile. Prefer `case` on `result` types — confirm with digests if your build
-uses a different unwrap.
+compile. Do **not** `case` `AddItemDistribute` to decide Equip.
 
 ```verse
 using { /Fortnite.com/Devices }
 using { /Fortnite.com/Characters }
 using { /Fortnite.com/Armory }
+using { /Fortnite.com/Itemization }
 using { /UnrealEngine.com/Itemization }
 using { /Verse.org/SceneGraph }
 using { /Verse.org/Simulation }
@@ -259,26 +264,34 @@ custom_weapon_controller_device := class(creative_device):
         spawn{ GrantGun(Agent) }
 
     GrantGun(Agent:agent)<suspends>:void =
-        if:
-            Inventory := GetFirstInventory[Agent]
-            Player := player[Agent]
-        then:
+        var Tries : int = 0
+        loop:
+            if (GetFirstInventory[Agent]):
+                break
+            if (Tries >= 50):
+                return
+            set Tries += 1
+            Sleep(0.1)
+        if (Inventory := GetFirstInventory[Agent], Player := player[Agent]):
             # Fresh prefab instance — name from Assets.digest after Verse compile.
             Gun := GnomeGun{}
             if (Trace := Gun.GetComponent[fort_trace_weapon_component]):
                 Trace.SetDamage(GrantDamage)
                 Trace.SetFireRate(GrantFireRate)
-            AddResult := Inventory.AddItemDistribute(Gun)
-            case (AddResult):
-                Ok(Added) =>
-                    for (Item : Added.AddedItems):
-                        if (IC := Item.GetComponent[item_component]):
-                            IC.Equip()
-                    if (not IsWatching[Player]? or IsWatching[Player] = false):
-                        if (set IsWatching[Player] = true) {}
-                        spawn{ WatchHolster(Agent) }
-                Err(_) =>
+            if (IC := Gun.GetComponent[item_component]):
+                Inventory.AddItemDistribute(Gun)
+                if (IC.GetParentInventory[]):
+                    IC.Equip()
+                else if (IC.PickUp[Inventory]):
+                    IC.Equip()
+                else:
                     Gun.RemoveFromParent()
+                    return
+                if (not IsWatching[Player]? or IsWatching[Player] = false):
+                    if (set IsWatching[Player] = true) {}
+                    spawn{ WatchHolster(Agent) }
+            else:
+                Gun.RemoveFromParent()
 
     OnChangeStats(Agent:agent):void =
         for (Gun : Agent.FindDescendantEntitiesWithTag(my_gun_tag)):
@@ -322,8 +335,11 @@ Notes:
 - `GnomeGun` is a placeholder for your compiled prefab class — verify with
   `get_verse_api({"name": "GnomeGun"})` (or your asset name).
 - Tag the **prefab** with `my_gun_tag` and save so grants carry the tag.
-- `AddItemDistribute` / `RemoveItem` return `result` — not failable `if`
-  wrappers; use `case` (or the unwrap your build documents).
+- `AddItemDistribute` / `RemoveItem` return `result` and are **not** failable
+  `if` wrappers — ignore Ok/Err for Armory parent/equip. After distribute,
+  `GetParentInventory[]` then `Equip()`, else `PickUp[Inventory]` then
+  `Equip()`, else `RemoveFromParent()`. Owned loop:
+  `skill_read_subskill("verse", "sys_owned_weapons")`.
 - Holster watch: once per player via `IsWatching`; clean on `PlayerRemoved`.
 - Wire buttons with `wire_verse_device_ref` after placing the device —
   **one field per turn** (`skill_read_subskill("uefn", "batch_commands")`).
@@ -345,20 +361,24 @@ Notes:
 |---------|-------|
 | Mesh not in mesh_component picker | Assets digest stale — compile Verse |
 | Gun floats beside the hand | Pivot not on handle — Edit Pivot / Blender |
-| Cannot pick up | Collision not Overlap All; missing mesh/item components on pickup entity |
-| Grant “works” but no hotbar icon | Island inventory configuration missing |
+| Cannot pick up | Owned pickup is `collectible_object_device` (`sys_owned_weapons`), not this prefab in the level |
+| Grant “works” but no hotbar icon | Island inventory configuration missing (BR-style) |
 | Overlay/mutate hits nothing | Tag missing on prefab / instances |
-| Gun left in world after failed grant | Forgot `RemoveFromParent` on add failure |
+| Gun left in world after failed grant | Forgot `RemoveFromParent` when PickUp also fails |
+| Picked collectible / granted, cannot shoot | Used `AddResult.Ok` only — missing `PickUp`+`Equip`; or collectible look-only with no `sys_owned_weapons` grant |
 | Holster prints twice | Watch loop spawned twice — use `IsWatching` map |
 | FireRate stuck at 25 | Editor UI clamp |
 | First person looks wrong | Known limit — use third person |
 | Island won’t publish after weapon anim | Experimental Scene Graph Animation enabled |
+| Picked up but shop shows locked / rejoin lost gun | Dragged the prefab instead of `collectible_object_device` + persist (`sys_owned_weapons`) |
+| Upgrade stacked / didn’t save | Mutated the held entity — persist then grant fresh (`sys_owned_weapons`) |
 
 ## Related skills / MCP (no new weapon tools)
 
 | Need | Skill | Tools |
 |------|-------|-------|
 | This path | scenegraph `custom_weapons` | entity/prefab tools + Verse digests |
+| Persist / collectible / canvas shop / rejoin | verse `sys_owned_weapons` | — |
 | Custom non-weapon items | scenegraph `custom_items` | same |
 | Stock FN guns | scenegraph `itemization` | same |
 | Soft inventory / shops | verse `sys_inventory` / `sys_economy` | device wire / granter fields |
