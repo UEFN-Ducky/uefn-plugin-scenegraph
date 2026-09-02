@@ -21,27 +21,27 @@ metadata:
   nothing else in this pack's editor tools will work. Say so — do not fall back
   to `execute_python` guessing.
 - A `false` builtin class → that alias is missing on this build; use
-  `list_scene_component_classes` to see what exists.
+  the EntityToolset component listing (`unreal__describe_toolset` for the exact tool name) to see what exists.
 
-### Component class resolution in `add_entity_component`
+### Component class resolution in EntityToolset `AddComponent`
 
 Three spellings, tried in order:
 
 1. **Alias** — `mesh_component`, `spot_light_component`,
    `keyframed_movement_component`, ... (see capabilities probe for the list).
-2. **Verse class name** — any name from `list_scene_component_classes`,
+2. **Verse class name** — any name from the EntityToolset component listing (`unreal__describe_toolset` for the exact tool name),
    including the project's own Verse components (kind `project`) once the
    project's Verse has built.
 3. **Full class object path** — e.g.
    `/MyProject/_Verse/Assets.Props-SM_Rock` (kind `asset_generated`).
 
-`list_scene_component_classes({"search": "light"})` filters by substring; kinds
+The EntityToolset component listing (see `unreal__describe_toolset`) filters by substring; kinds
 are `builtin` (engine), `project` (your Verse code), `asset_generated`
 (digest classes for meshes/particles/sounds in project content).
 
 ### Asset components
 
-`add_entity_component` with `asset_path` wires a mesh/particle/sound asset:
+EntityToolset `AddComponent` with `asset_path` wires a mesh/particle/sound asset:
 
 - The asset MUST live in the project mount (`/MyProject/...`). `/Game/...`
   Fortnite content has no digest class — the tool errors, that is by design.
@@ -53,9 +53,9 @@ are `builtin` (engine), `project` (your Verse code), `asset_generated`
 ### Entities vs the outliner
 
 - Entities live under the level's `LevelEntity` container; the simulation root
-  (`SimulationEntity`) and `LevelEntity` show up in `list_entities` as
+  (`SimulationEntity`) and `LevelEntity` show up in EntityToolset `FindEntities` as
   infrastructure — do not destroy or reparent them.
-- `destroy_entity` soft-deletes (the object becomes `TRASH_*` until save); the
+- the EntityToolset destroy tool soft-deletes (the object becomes `TRASH_*` until save); the
   tools filter trash out of listings automatically.
 - Prefab-editor windows run in transient worlds; the tools only report the
   open level's world.
@@ -71,7 +71,7 @@ Hard rules and orbit pitfalls: `skill_read_subskill("scenegraph", "prefab_only")
 - `create_prefab_from_entities` packages **loose** named entities and REPLACES
   them in the level with an instance of the **new** prefab. The asset saves
   immediately; its Verse class appears in Assets.digest.verse only after the
-  next Verse build, and is usable (`using`, `add_entity_component`) only after
+  next Verse build, and is usable (`using`, EntityToolset `AddComponent`) only after
   the Verse VM relinks — a fresh digest is **not** enough. Wait out
   `[WinError 10054]` (build started); never retry the compile. If linking
   fails with `Script error 9002`, use the comment-out → rebuild → uncomment
@@ -92,7 +92,7 @@ Hard rules and orbit pitfalls: `skill_read_subskill("scenegraph", "prefab_only")
   UEFN and Save. Do not treat level-instance edits as the source of truth.
 - Prefab overrides (per-instance property tweaks) are NOT a separate scripting
   API — prefer editing the prefab asset; level tweaks diverge other instances.
-- `list_entities` filters `TRASH_*`, `REINST_*`, and EntityProxyActor shadow
+- EntityToolset `FindEntities` filters `TRASH_*`, `REINST_*`, and EntityProxyActor shadow
   copies so each placed prefab appears once (canonical LevelEntity path).
 
 ### Static vs Verse spawn
@@ -117,7 +117,7 @@ reports per-actor results. Devices should stay devices.
 - **Ambiguous entity name** — multiple matches are listed in the error; pass
   the full object path instead of the display name.
 - **Transform moved the wrong way** — remember `[forward, left, up]`:
-  `left: 50` is Unreal `Y = -50`. Verify with `get_entity_info` bounds.
+  `left: 50` is Unreal `Y = -50`. Verify with EntityToolset `FindEntities` bounds.
 - **Component missing after project Verse edit** — the editor needs a Verse
   build before new project component classes exist; push changes and retry.
   Project paths often look like

@@ -94,7 +94,7 @@ get_verse_api({"name": "AssaultRifle_BR_CH4S1_Rare"})
 item_granter_component<public> := class<final_super>(component):
 
     @editable Trig : trigger_device = trigger_device{}
-    @editable Items : []subtype(entity) = array{}   # pick item/weapon types in Details
+    @editable Items : []concrete_subtype(entity) = array{}   # pick item/weapon types in Details; concrete so {} can construct them
 
     TriggerAwait()<suspends>:void =
         loop:
@@ -104,8 +104,7 @@ item_granter_component<public> := class<final_super>(component):
                 Inventory := (for (InvComp : Agent.FindDescendantComponents(inventory_component)) do InvComp)[0]
             then:
                 for (Item : Items):
-                    ItemConcrete : concrete_subtype(entity) = Item
-                    Inventory.AddItemDistribute(ItemConcrete{})
+                    Inventory.AddItemDistribute(Item{})
 
     OnSimulate<override>()<suspends>:void =
         spawn{ TriggerAwait() }

@@ -244,10 +244,11 @@ using { /Verse.org/SceneGraph }
 using { /Verse.org/Simulation }
 using { /UnrealEngine.com/Temporary/Diagnostics }
 
-# Event-driven gate (preferred).
+# Event-driven gate (preferred). A spawn task cannot be cancelled (task has no
+# Cancel()), so the background loop races a stop signal instead.
 custom_item_behavior_component := class<final_super>(component):
     var MaybeEquipSub : ?cancelable = false
-    var HoldingTask : ?cancelable = false
+    StopHolding : event() = event(){}
 
     OnBeginSimulation<override>():void =
         (super:)OnBeginSimulation()
@@ -257,7 +258,7 @@ custom_item_behavior_component := class<final_super>(component):
                 StartHolding()
 
     OnEndSimulation<override>():void =
-        StopHolding()
+        StopHolding.Signal()
         if (Sub := MaybeEquipSub?):
             Sub.Cancel()
         set MaybeEquipSub = false
@@ -269,16 +270,16 @@ custom_item_behavior_component := class<final_super>(component):
             StartHolding()   # enable buttons / VFX / abilities here
         else:
             Print("Item is not equipped")
-            StopHolding()    # disable the same logic here
+            StopHolding.Signal()    # disable the same logic here
 
     StartHolding():void =
-        StopHolding()
-        set HoldingTask = option{ spawn{ WhileEquipped() } }
+        StopHolding.Signal()            # end any previous holder first
+        spawn{ HoldUntilStopped() }
 
-    StopHolding():void =
-        if (T := HoldingTask?):
-            T.Cancel()
-        set HoldingTask = false
+    HoldUntilStopped()<suspends>:void =
+        race:
+            StopHolding.Await()         # first to finish wins; the loop is cancelled
+            WhileEquipped()
 
     WhileEquipped()<suspends>:void =
         # Prefer TickEvents.PrePhysics for per-frame work (verse_authoring).
@@ -294,9 +295,9 @@ custom_item_behavior_component := class<final_super>(component):
 
 `using { /UnrealEngine.com/Itemization }` is required for `item_component`.
 Build / push Verse before the custom component appears in the prefab’s Add
-Component list. Confirm cancelable/`spawn` cancel patterns on your build with
-digests if the compiler complains — the **gate** is `ChangeEquippedEvent` +
-`IsItemEquipped` (or `IsEquipped[]`).
+Component list. The **gate** is `ChangeEquippedEvent` + `IsItemEquipped` (or
+`IsEquipped[]`); cancellation is `race` against an `event()`, never `Cancel()` on
+a `spawn` result.
 
 ### Agent-side inventory reactions
 
@@ -343,14 +344,17 @@ custom_item_controller_device := class(creative_device):
         if (Inventory := GetFirstInventory[Agent]):
             # Fresh prefab instance — name from Assets.digest after Verse compile.
             Item := MyCustomItem{}
-            AddResult := Inventory.AddItemDistribute(Item)  # ?AllowMergeItems := true if stackable
-            case (AddResult):
-                Ok(Added) =>
-                    for (Ent : Added.AddedItems):
-                        if (IC := Ent.GetComponent[item_component]):
-                            IC.Equip()
-                Err(_) =>
+            if (IC := Item.GetComponent[item_component]):
+                Inventory.AddItemDistribute(Item)   # ?AllowMergeItems := true if stackable
+                # result has no Ok/Err patterns — decide by parenting, same as custom_weapons
+                if (IC.GetParentInventory[]):
+                    IC.Equip()
+                else if (IC.PickUp[Inventory]):
+                    IC.Equip()
+                else:
                     Item.RemoveFromParent()
+            else:
+                Item.RemoveFromParent()
 
     OnEquip(Agent:agent):void =
         for (Ent : Agent.FindDescendantEntitiesWithTag(my_item_tag)):
@@ -358,7 +362,7 @@ custom_item_controller_device := class(creative_device):
                 IC.Equip()
 
     OnHas(Agent:agent):void =
-        Found := false
+        var Found : logic = false
         for (Ent : Agent.FindDescendantEntitiesWithTag(my_item_tag)):
             set Found = true
         if (Found = true):

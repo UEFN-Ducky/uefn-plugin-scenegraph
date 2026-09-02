@@ -16,6 +16,7 @@ Every signature here is from this build's digests. Re-check with
 using { /Verse.org/SceneGraph }
 using { /Verse.org/SceneGraph/KeyframedMovement }
 using { /Verse.org/SpatialMath }
+using { /Fortnite.com/Characters }   # fort_character / GetFortCharacter[] in the origin recipe below
 ```
 
 ### Pick the right mechanism
@@ -77,8 +78,7 @@ Held.ResetOrigin()
 ```
 
 `origin` is an interface with `GetTransform()`; `entity_origin` is the
-entity-backed implementation (`Entity` field, gated
-`MinUploadedAtFNVersion := 3200`).
+entity-backed implementation (`Entity` field).
 
 **Do not change the origin and move in the same frame** — that combination
 stopped working in 40.00 (Epic bug report still open). Set the origin, let a
@@ -146,10 +146,10 @@ Components are documented to simulate in the **editor as well as in play**, so a
 dead viewport is usually a real bug, not "you forgot to hit Play". Work down
 this list, then confirm in PIE / Launch Session before declaring it broken:
 
-1. Is there a `transform_component`? `get_entity_info` reporting
+1. Is there a `transform_component`? EntityToolset `FindEntities` reporting
    `local_transform_error` means no. Call `SetLocalTransform` or add one.
 2. Is the component actually attached? Custom Verse components only appear
-   after a successful Verse build — check `list_scene_component_classes`.
+   after a successful Verse build — check the EntityToolset component listing (`unreal__describe_toolset` for the exact tool name).
 3. Is the work in the right hook? Setup in `OnBeginSimulation`, async in
    `OnSimulate` (runs **once** — wrap listeners in `loop`), per-frame in
    `TickEvents.PrePhysics`.

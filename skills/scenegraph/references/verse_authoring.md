@@ -184,7 +184,7 @@ importing both families **qualify the type** exactly like the digests do:
 ### Ensure transform before KFM
 
 Empty pivots often have **no** `transform_component` (`local_transform_error`
-from `get_entity_info`). KFM cannot drive them until a transform exists.
+from EntityToolset `FindEntities`). KFM cannot drive them until a transform exists.
 
 ```verse
 # SetLocalTransform creates transform_component on demand if missing.
@@ -240,7 +240,7 @@ After Verse build, project component object paths often look like:
 
 `/<Project>/_Verse.Verse-<Module>-<class_name>`
 
-Use that full path with `add_entity_component` when the short alias fails.
+Use that full path with EntityToolset `AddComponent` when the short alias fails.
 Attach custom comps on the **prefab asset** when possible (see `prefab_only`).
 
 ### Built-in components worth knowing

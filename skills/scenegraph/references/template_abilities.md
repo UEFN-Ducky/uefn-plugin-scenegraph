@@ -133,7 +133,7 @@ using { /Verse.org/Simulation }
 
 # First fort_inventory_weapon_hotbar_component on the PLAYER (not the item).
 (Player : player).GetWeaponHotbarComponent()<decides><transacts> : fort_inventory_weapon_hotbar_component =
-    first (WeaponHotbarComponent : Player.FindDescendantComponents(fort_inventory_weapon_hotbar_component)) {WeaponHotbarComponent}
+    (for (Hotbar : Player.FindDescendantComponents(fort_inventory_weapon_hotbar_component)) do Hotbar)[0]   # Verse has no `first`
 
 # Defining this type exposes inherited properties on the item prefab.
 template_ability := class(fort_template_ability(ability_context, fort_template_ability_effect)):

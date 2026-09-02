@@ -13,10 +13,10 @@ Always probe the live build first:
 
 ```
 scene_graph_capabilities({})
-list_scene_component_classes({"search": "<substring>"})
+unreal__describe_toolset({"toolset_name": "ValkyrieToolset.EntityToolset"})   # component/class listing + AddComponent live here
 ```
 
-Kinds from `list_scene_component_classes`:
+Kinds reported by the EntityToolset component listing:
 
 | Kind | Meaning |
 |------|---------|
@@ -65,7 +65,6 @@ subclass — `Ent.AddComponents(array{sphere{Entity := Ent}})`.
 | Alias | Role |
 |-------|------|
 | `transform_component` | Local/global pose. **Required** for mesh placement and any KFM/orbit pivot. Empty pivots report `local_transform_error`. Verse `SetLocalTransform` creates one on demand. |
-| `mass_component` | Physics mass; often present automatically. |
 
 #### Render / audio / FX (asset)
 
@@ -141,19 +140,19 @@ Digest may also expose related types (e.g. camera director) — confirm with
 
 Custom `*_component` classes appear only **after** Verse compiles.
 
-Resolution order in `add_entity_component`:
+Resolution order in EntityToolset `AddComponent`:
 
 1. Builtin alias (`mesh_component`, …)
-2. Short Verse class name (when listed by `list_scene_component_classes`)
+2. Short Verse class name (when listed by the EntityToolset component listing (`unreal__describe_toolset` for the exact tool name))
 3. Full object path — often:  
    `/<Project>/_Verse.Verse-<Module>-<class_name>`  
    Example: `/catland/_Verse.Verse-SolarOrbits-constant_rotation_component`
 
-If short name fails, call `list_scene_component_classes` (and `reload_listener`
+If short name fails, call the EntityToolset component listing (`unreal__describe_toolset` for the exact tool name) (and `reload_listener`
 if the list is stale after a Verse relink) — do not invent paths and do not
 walk `ObjectIterator` via `execute_python` (freezes the editor).
 
-After `add_entity_component`, check `class_path`. A `VERSE_DEAD_*` class under
+After EntityToolset `AddComponent`, check `class_path`. A `VERSE_DEAD_*` class under
 `/Engine/Transient` is a stale VM class: `reload_listener` → destroy and
 recreate the entity → attach again. Details:
 `skill_read_subskill("uefn", "verse_build_lifecycle")`.
@@ -163,13 +162,14 @@ recreate the entity → attach again. Details:
 ### Mesh attachment recipe
 
 ```
-add_entity_component({
-  "entity": "Body_Earth",
-  "component_class": "mesh_component",
-  "asset_path": "/MyProject/Meshes/SM_Body_Earth"
+unreal__call_tool({
+  "toolset_name": "ValkyrieToolset.EntityToolset",
+  "tool_name": "AddComponent",
+  "arguments": {"entity": "Body_Earth", "component_class": "mesh_component", "asset_path": "/MyProject/Meshes/SM_Body_Earth"}
 })
 # a mesh with no transform_component is not positioned at all
-add_entity_component({"entity": "Pivot_Earth", "component_class": "transform_component"})
+unreal__call_tool({"toolset_name": "ValkyrieToolset.EntityToolset", "tool_name": "AddComponent", "arguments": {"entity": "Pivot_Earth", "component_class": "transform_component"}})
+# argument names: read them from unreal__describe_toolset first — never invent them
 ```
 
 Put FBX axis offsets on a **child** mesh entity (`SetLocalTransform`); keep the

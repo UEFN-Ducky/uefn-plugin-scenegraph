@@ -305,7 +305,7 @@ custom_weapon_controller_device := class(creative_device):
                 IC.Equip()
 
     OnHas(Agent:agent):void =
-        Found := false
+        var Found : logic = false
         for (Gun : Agent.FindDescendantEntitiesWithTag(my_gun_tag)):
             set Found = true
         if (Found = true):

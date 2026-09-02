@@ -33,7 +33,7 @@ on the level copy as the primary workflow for prefab-owned content.
 |-------|-----|
 | `create_prefab_from_entities` on an already-placed `EP_*` instance | Can collapse children into an empty shell (lost hierarchy). |
 | Moving/editing `Body_*` / pivots only on the level instance | Instance overrides; other instances and the asset diverge. |
-| Treating level `list_entities` results as the prefab asset | You are editing the instance, not the definition. |
+| Treating level EntityToolset `FindEntities` results as the prefab asset | You are editing the instance, not the definition. |
 
 ### Allowed packaging
 
@@ -69,7 +69,7 @@ EP_SolarSystem
 
 Rules:
 
-1. **Pivots need `transform_component`.** Without it, `get_entity_info` shows
+1. **Pivots need `transform_component`.** Without it, EntityToolset `FindEntities` shows
    `local_transform_error` and KFM cannot orbit children.
 2. Put orbital radius on the **body** local translation; rotate the **pivot**.
 3. Motion = `keyframed_movement_component`. The class is `<final>`, so a

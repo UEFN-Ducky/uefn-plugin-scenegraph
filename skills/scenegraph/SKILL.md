@@ -1,7 +1,7 @@
 ---
 source_plugin_id: scenegraph
 name: scenegraph
-description: "UEFN Scene Graph — create and edit entities, components, and prefabs in the editor via MCP tools, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, author custom Armory weapon prefabs, custom non-weapon item prefabs, and Fortnite template abilities (fort_template_ability / fort_item_ability_component)"
+description: "UEFN Scene Graph — use when the task is entities, components, or Entity Prefabs: create/edit them via Epic EntityToolset + Ducky prefab helpers, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, custom Armory weapon prefabs, custom non-weapon item prefabs, template abilities (fort_template_ability / fort_item_ability_component). Not for general Verse source (verse skill) or placed Creative devices (uefn skill)."
 license: MIT
 metadata:
   label: "UEFN Scene Graph"
@@ -17,12 +17,13 @@ metadata:
 **Entity CRUD is nested Epic UEFN MCP.** Settings → MCPs → **UEFN MCP (Epic)**.
 Use `unreal__list_toolsets` → `unreal__describe_toolset` → `unreal__call_tool` into
 `ValkyrieToolset.EntityToolset` (`FindEntities`, `CreateEntity`, `AddComponent`,
-`SetEntityTransform`, …). There are no flat `unreal__create_entity` MCP tools.
+`SetEntityTransform`, …). There are no flat `unreal__<tool>` MCP tools.
 Ducky keeps prefab helpers (`create_empty_prefab`, `create_prefab_from_entities`,
 `instantiate_prefab`, `convert_actors_to_entities`) plus `scene_graph_capabilities`.
 Epic toolsets speak **XYZ**; do not pass SpatialMath LUF into Epic `arguments`.
-If `epic_mcp_online` is false, recite Epic setup steps — never pruned Ducky
-`create_entity` / `list_entities`. Map: `skill_read_subskill("uefn", "epic_mcp")`.
+If an Epic call errors, retry once, then degrade to the Ducky prefab helpers /
+`spawn_actor` and finish the task (setup steps only afterwards). The removed Ducky
+entity tools no longer exist. Map: `skill_read_subskill("uefn", "epic_mcp")`.
 
 **CRITICAL — editor mutations are SERIAL:** one heavy MCP call
 (`unreal__*` / `instantiate_prefab` / `spawn_actor` / `wire_verse_device_ref` /
@@ -53,7 +54,7 @@ mutating a placed level instance as the primary workflow — see
 | **VERSE API** | `get_verse_api`, `search_verse_digest`, `list_verse_modules` |
 
 Always `scene_graph_capabilities({})` first for prefab helper availability. Entity
-list/create uses Epic — not Ducky `list_entities` / `create_entity`.
+list/create uses Epic EntityToolset (`FindEntities` / `CreateEntity`).
 
 ## Golden path (build an entity in the editor)
 
@@ -190,7 +191,7 @@ free-text hunts, `list_verse_modules` for the module map.
   reference the project's digest-generated asset classes; Fortnite `/Game/...`
   content will not attach. New island assets use `get_project_info().content_root`
   (never invent `/Game/...` for creates).
-- **Entity names must be unique per level.** `create_entity` errors on
+- **Entity names must be unique per level.** EntityToolset `CreateEntity` errors on
   duplicates; rename instead of recreating.
 - **Entity Prefabs are first-class MCP tools.** `create_empty_prefab` /
   `create_prefab_from_entities` (loose entities → new name only) create assets
@@ -227,6 +228,6 @@ Load with `skill_read_subskill("scenegraph", "<id>")`:
 - `prefab_only` — prefab-asset-first hard rules, MCP level-vs-tab limit, banned repackage, orbit recipe
 - `movement_transforms` — why it isn't moving: local vs global, origins/attach, full KFM API, LUF axes, known transform bugs
 - `itemization` — items and inventories, granting stock weapons from `/Fortnite.com/Weapons`, pickups, equipping
-- `custom_weapons` — custom Armory Entity Prefabs (AR/pistol/shotgun/SMG), mesh/pivot/collision, `fort_trace_weapon_component`, Verse grant: WaitForInventory + AddItemDistribute then GetParentInventory/PickUp/Equip (not AddResult.Ok). Owned collectible + canvas shop + persist → verse `sys_owned_weapons`
+- `custom_weapons` — custom Armory Entity Prefabs (AR/pistol/shotgun/SMG), mesh/pivot/collision, `fort_trace_weapon_component`, Verse grant: poll until `GetFirstInventory[Agent]` succeeds (a `Sleep(0.1)` loop you write — not an API) + AddItemDistribute then GetParentInventory/PickUp/Equip (not AddResult.Ok). Owned collectible + canvas shop + persist → verse `sys_owned_weapons`
 - `custom_items` — fully custom non-weapon Entity Prefabs: itemization shell + Verse components for any behavior, categories/stack/rarity, KFM, equipped logic, Verse grant (no Creative granter yet)
 - `template_abilities` — Fortnite template abilities: `fort_template_ability` Verse class, `fort_item_ability_component` on an item prefab, AbilityElements (burn/pepper), IA_Sprint, hotbar grant device
