@@ -9,6 +9,10 @@ metadata:
 
 ## Verse authoring for Scene Graph
 
+> **Snippets here are fragments.** The `using` block in this file's first code
+> block applies to all of them — copy those imports (or start from the matching
+> `verse_template_apply` pack) when pasting into a real `.verse` file.
+
 Imports for almost everything here:
 
 ```verse
@@ -74,42 +78,57 @@ Also on `component`: `Entity` (the owner), `RemoveFromEntity()`,
 (override, return `true` to consume — `MinUploadedAtFNVersion := 4000`), and
 `TickEvents`.
 
-### Per-frame work: TickEvents, never `Sleep(0.0)`
+### Per-frame work: `OnSimulate` loop (TickEvents is Epic-only on 42.10)
 
-`loop` + `Sleep(0.0)` is not a frame hook — it is the classic cause of motion
-that stutters, lags a frame behind physics, or appears not to run at all. Use
-the `tick_events` object every component already owns:
+**`TickEvents.PrePhysics.Subscribe(...)` does NOT compile in creator code.**
+`execution_listenable` is declared `class<epic_internal>` in the 42.10 digest, so
+subscribing from your own component fails the build:
+
+```
+Invalid access of internal function (/Verse.org/SceneGraph/execution_listenable:)Subscribe
+from control scope .../mover_component/OnBeginSimulation
+```
+
+(Verified by compiling on FN 42.10. Re-check with
+`get_verse_api("execution_listenable")` — if Epic drops `epic_internal`, the
+subscribe form below becomes usable again.)
+
+The per-frame hook creator code *can* use is `OnSimulate` with a one-frame
+`Sleep(0.0)` and your own delta clock:
 
 ```verse
+using { /Verse.org/SpatialMath }
 mover_component := class<final_super>(component):
     @editable Speed:float = 200.0
-    var MaybeTick:?cancelable = false
 
-    OnBeginSimulation<override>():void =
-        (super:)OnBeginSimulation()
-        set MaybeTick = option{ TickEvents.PrePhysics.Subscribe(OnPrePhysics) }
+    OnSimulate<override>()<suspends>:void =
+        var Last:float = GetSimulationElapsedTime()
+        loop:
+            Sleep(0.0)                      # yields exactly one frame
+            if (not IsSimulating[]):
+                break                       # entity left the scene / experience reset
+            Now := GetSimulationElapsedTime()
+            Advance(Now - Last)
+            set Last = Now
 
-    OnPrePhysics(DeltaTime:float):void =
+    Advance(DeltaTime:float):void =
         T := Entity.GetLocalTransform()
         Entity.SetLocalTransform(transform:
             Translation := T.Translation + vector3{Forward := Speed * DeltaTime}
             Rotation := T.Rotation
             Scale := T.Scale)
-
-    OnEndSimulation<override>():void =
-        (super:)OnEndSimulation()
-        if (Tick := MaybeTick?):
-            Tick.Cancel()
-        set MaybeTick = false
 ```
 
-- `TickEvents.PrePhysics` / `TickEvents.PostPhysics` are `execution_listenable`:
-  `Subscribe(Callback:type{_(:float):void})<transacts>:cancelable`, and the
-  float payload is **DeltaTime**. `Await()` works too if you are already inside
-  `OnSimulate`.
-- PrePhysics = affect this frame's physics; PostPhysics = react to its result.
-- **Always cancel in `OnEndSimulation`** — a leaked subscription keeps ticking
-  against a dead entity.
+- Use a **measured** delta (`GetSimulationElapsedTime` difference), never a fixed
+  constant — `Sleep(0.0)` resumes next frame, not on a fixed cadence.
+- `OnSimulate` is cancelled before `OnEndSimulation`, so this loop needs no manual
+  cancel; the `IsSimulating[]` break is belt-and-braces for editor resets.
+- For timed, repeatable motion (doors, lifts, orbits) prefer
+  `keyframed_movement_component` over any hand-rolled loop — see
+  `movement_transforms`.
+- `TickEvents` still exists on `component` and PrePhysics/PostPhysics remain the
+  right *concepts* (affect this frame's physics vs react to its result); only the
+  `Subscribe` call is gated.
 - Scale motion by `DeltaTime`; never assume a fixed frame rate.
 - For timed or looping animation prefer `keyframed_movement_component` over
   ticking a transform yourself — see `movement_transforms`.

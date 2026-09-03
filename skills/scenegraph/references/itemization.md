@@ -9,6 +9,10 @@ metadata:
 
 ## Items, inventories & granting weapons
 
+> **Snippets here are fragments.** The `using` block in this file's first code
+> block applies to all of them — copy those imports (or start from the matching
+> `verse_template_apply` pack) when pasting into a real `.verse` file.
+
 **Weapons and items are entities, not devices.** Every Fortnite weapon is a
 concrete `entity` class in the digests, so "spawn a weapon" is
 `AssaultRifle_BR_CH4S1_Rare{}` — then you put that entity into an
@@ -115,9 +119,12 @@ The four things that break this if you change them:
 1. `FindDescendantComponents` returns a **generator**, so
    `(for (X : Gen) do X)[0]` converts and indexes it — and indexing is failable,
    which is why the whole thing sits inside `if: … then:`.
-2. `@editable` takes `[]subtype(entity)` (a list of *types*), but only a
-   `concrete_subtype(entity)` can be instantiated — hence the local
-   `ItemConcrete` before `{}`.
+2. The `@editable` list is `[]concrete_subtype(entity)` so `Item{}` can construct
+   each entry. **From v42.10 the editor validator enforces that every type you
+   put into a `concrete_subtype(foo)` field is itself `<concrete>`** (every field
+   has a default). Stock `/Fortnite.com/Weapons` and `/Fortnite.com/Items`
+   classes are `class<final><concrete>`; your own item prefab classes must be
+   `<concrete>` too or the project fails validation on republish.
 3. `AddItemDistribute` returns a `result`, it is **not** failable. Do not wrap
    it in `if`; read the result if you care whether the inventory was full.
 4. One item entity belongs to exactly one inventory. Construct a **fresh**

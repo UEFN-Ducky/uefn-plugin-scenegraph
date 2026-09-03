@@ -1,7 +1,7 @@
 {
   "id": "scenegraph",
   "kind": "plugin",
-  "version": "1.0.31",
+  "version": "1.0.35",
   "label": "UEFN Scene Graph",
   "description": "UEFN Scene Graph prefab helpers plus template abilities. Entity CRUD uses nested Epic UEFN MCP (unreal__list_toolsets/describe_toolset/call_tool). Bundles the scenegraph skill. Serial editor ops (one MCP call per turn).",
   "min_app_version": "1.0.0",

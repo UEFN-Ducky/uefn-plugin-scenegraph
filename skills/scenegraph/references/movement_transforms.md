@@ -9,6 +9,10 @@ metadata:
 
 ## Movement & transforms
 
+> **Snippets here are fragments.** The `using` block in this file's first code
+> block applies to all of them — copy those imports (or start from the matching
+> `verse_template_apply` pack) when pasting into a real `.verse` file.
+
 Every signature here is from this build's digests. Re-check with
 `get_verse_api({"name": "<identifier>"})` before writing anything unfamiliar.
 
@@ -25,7 +29,7 @@ using { /Fortnite.com/Characters }   # fort_character / GetFortCharacter[] in th
 |------|-----|-----|
 | Teleport / place once | `SetLocalTransform` / `SetGlobalTransform` | a tick loop |
 | Timed or looping animation (doors, lifts, orbits, projectile flight) | `keyframed_movement_component` | per-frame transform writes |
-| Per-frame steering, chasing, physics-reactive motion | `TickEvents.PrePhysics` (see `verse_authoring`) | `loop` + `Sleep(0.0)` |
+| Per-frame steering, chasing, physics-reactive motion | `OnSimulate` + `Sleep(0.0)` + measured delta (see `verse_authoring`) — `TickEvents.Subscribe` is `epic_internal` on 42.10 and will not compile | a fixed-constant delta |
 | Follow / attach to a player, vehicle or other entity | **origin** (`SetOrigin`) | copying the target transform every frame |
 | Reparent permanently | `Parent.AddEntities(array{Child})` | `SetOrigin` |
 
@@ -121,6 +125,13 @@ KFM.Play()                              # nothing moves without this
 
 Playback modes: `oneshot_`, `loop_`, `pingpong_keyframed_movement_playback_mode`.
 Translation and Scale on a delta are **additive**; Rotation is relative.
+
+Easing (`/Verse.org/SceneGraph/KeyframedMovement`, all `<concrete>` so `{}` works):
+`linear_easing_function`, `ease_cubic_bezier_easing_function`,
+`ease_in_cubic_bezier_easing_function`, `ease_out_cubic_bezier_easing_function`
+(starts fast, slows at the end — re-exposed as **Experimental** in v42.10), or a
+custom `cubic_bezier_easing_function{X1, Y1, X2, Y2}`. Experimental easing blocks
+publishing; prefer `linear_easing_function{}` for shipped islands.
 Never drive Scene Graph entities with `creative_prop` / `animation_controller`
 keyframes — different system, different API.
 
@@ -150,9 +161,9 @@ this list, then confirm in PIE / Launch Session before declaring it broken:
    `local_transform_error` means no. Call `SetLocalTransform` or add one.
 2. Is the component actually attached? Custom Verse components only appear
    after a successful Verse build — check the EntityToolset component listing (`unreal__describe_toolset` for the exact tool name).
-3. Is the work in the right hook? Setup in `OnBeginSimulation`, async in
-   `OnSimulate` (runs **once** — wrap listeners in `loop`), per-frame in
-   `TickEvents.PrePhysics`.
+3. Is the work in the right hook? Setup in `OnBeginSimulation`, async and
+   per-frame in `OnSimulate` (runs **once** — wrap it in `loop` with
+   `Sleep(0.0)`); `TickEvents.Subscribe` is Epic-internal on 42.10.
 4. KFM: did you call `Play()` after `SetKeyframes`? Are the deltas non-zero
    (they are additive, `0` means no change)?
 5. Are you moving the right entity? Orbit radius belongs on the **body**'s local

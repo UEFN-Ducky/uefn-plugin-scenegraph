@@ -70,7 +70,7 @@ subclass — `Ent.AddComponents(array{sphere{Entity := Ent}})`.
 
 | Alias | Role |
 |-------|------|
-| `mesh_component` | Render mesh. Needs PROJECT `asset_path` from the editor tool (or a `BasicShapes` subclass in Verse). **Depends on `transform_component`** to be positioned at all. Digest props: `Visible`, `Collidable`, `Queryable`; it is also `enableable` (`Enable()`, `Disable()`, `IsEnabled[]`); overlap events `EntityEnteredEvent` / `EntityExitedEvent`. |
+| `mesh_component` | Render mesh. Needs PROJECT `asset_path` from the editor tool (or a `BasicShapes` subclass in Verse). It is `class<final_super><epic_internal>` — **creator Verse cannot subclass it**; importing a mesh generates the subclass for you in the project Assets digest (e.g. `SM_Hat01_Cap := class<final>(mesh_component)`), so find custom meshes with `list_verse_types(digest="assets")` and never invent a class name. **Depends on `transform_component`** to be positioned at all. Digest props: `Visible`, `Collidable`, `Queryable`; it is also `enableable` (`Enable()`, `Disable()`, `IsEnabled[]`); overlap events `EntityEnteredEvent` / `EntityExitedEvent`. |
 | `particle_system_component` | Particle / Niagara system — PROJECT asset. |
 | `sound_component` | Sound — PROJECT asset. |
 
@@ -95,7 +95,7 @@ subclass — `Ent.AddComponents(array{sphere{Entity := Ent}})`.
 
 | Alias | Role |
 |-------|------|
-| `camera_component` | Scene Graph camera |
+| `camera_component` | Scene Graph camera — `<abstract>`, place `perspective_` / `orthographic_` / `physical_camera_component` or `camera_director_component`. **Experimental.** `Director.AddCamera[Cam, Priority]` IS `<decides>` (brackets); `Cam.CameraModifiers.AddModifier(Mod, VisualModifierPosition)` is NOT (parens). Fortnite modifiers `fort_orbit_camera_modifier` / `fort_fixed_angle_` / `fort_fixed_point_` live in `/Fortnite.com/SceneGraphCameras` (42.00+). Full tables: `skill_read_subskill("scenegraph", "cameras")`. **Transitions (working from v42.10):** override `GetEnterTransition(SourceCamera)` / `GetExitTransition(DestinationCamera)` (both `<transacts><decides>`) on your `camera_component` subclass and return `camera_transition{Blend := camera_mode_blend_smoothstep{}, Duration := 0.5}`. Blends: `camera_mode_blend_pop{}` (instant **cut**), `_linear`, `_smoothstep`, `_smootherstep`, `_orbit{DrivingBlend := …}`. All `<concrete>`, all Experimental (blocks publishing). |
 | `interactable_component` | Player interaction surface (not a UI button) |
 | `basic_interactable_component` | Simpler interactable |
 | `possessable_component` | Possession |

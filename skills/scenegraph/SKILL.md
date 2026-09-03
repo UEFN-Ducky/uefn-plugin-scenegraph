@@ -1,11 +1,11 @@
 ---
 source_plugin_id: scenegraph
 name: scenegraph
-description: "UEFN Scene Graph — use when the task is entities, components, or Entity Prefabs: create/edit them via Epic EntityToolset + Ducky prefab helpers, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, custom Armory weapon prefabs, custom non-weapon item prefabs, template abilities (fort_template_ability / fort_item_ability_component). Not for general Verse source (verse skill) or placed Creative devices (uefn skill)."
+description: "UEFN Scene Graph — use when the task is entities, components, or Entity Prefabs: create/edit them via Epic EntityToolset + Ducky prefab helpers, query the exact Verse API from digests, author Verse components that compile and actually move, grant stock items/weapons through inventories, custom Armory weapon prefabs, custom non-weapon item prefabs, template abilities (fort_template_ability / fort_item_ability_component), Scene Graph cameras + orbit camera modifiers, and fully custom entity player controllers (Move input, custom gravity/jump). Not for general Verse source (verse skill) or placed Creative devices (uefn skill)."
 license: MIT
 metadata:
   label: "UEFN Scene Graph"
-  version: 17
+  version: 18
   managed_by: uefn-ducky
   author: UEFN-Ducky
   copyright: Copyright 2026 Mindful Path Company, LLC
@@ -143,11 +143,13 @@ free-text hunts, `list_verse_modules` for the module map.
   Empty pivots need `transform_component` before KFM (`SetLocalTransform`
   creates one). **Never** use `creative_prop` / `animation_controller`
   keyframes for Scene Graph entities — different API.
-- **Per-frame work = `TickEvents.PrePhysics` / `PostPhysics`**, subscribed in
-  `OnBeginSimulation` and **cancelled in `OnEndSimulation`**. The callback
-  payload is DeltaTime. `loop` + `Sleep(0.0)` is not a frame hook and is the
-  usual reason generated motion stutters or never runs. `OnSimulate` runs
-  **once** — wrap listeners in `loop`. Details: `verse_authoring`.
+- **Per-frame work = `OnSimulate` + `loop` + `Sleep(0.0)` + a measured delta**
+  (`GetSimulationElapsedTime` difference), breaking on `not IsSimulating[]`.
+  **`TickEvents.PrePhysics.Subscribe(...)` does NOT compile in creator code** —
+  `execution_listenable` is `class<epic_internal>` on FN 42.10 (verified by
+  build: "Invalid access of internal function … Subscribe"). Timed/looping
+  motion should use `keyframed_movement_component` instead of any hand loop.
+  `OnSimulate` runs **once** — wrap it in `loop`. Details: `verse_authoring`.
 - **Follow/attach = origin, not per-tick copying.** `SetOrigin(entity_origin{
   Entity := Target})` / `ResetOrigin()` re-base an entity onto another without
   reparenting. Do not change origin and move in the same frame. Details:
@@ -230,4 +232,6 @@ Load with `skill_read_subskill("scenegraph", "<id>")`:
 - `itemization` — items and inventories, granting stock weapons from `/Fortnite.com/Weapons`, pickups, equipping
 - `custom_weapons` — custom Armory Entity Prefabs (AR/pistol/shotgun/SMG), mesh/pivot/collision, `fort_trace_weapon_component`, Verse grant: poll until `GetFirstInventory[Agent]` succeeds (a `Sleep(0.1)` loop you write — not an API) + AddItemDistribute then GetParentInventory/PickUp/Equip (not AddResult.Ok). Owned collectible + canvas shop + persist → verse `sys_owned_weapons`
 - `custom_items` — fully custom non-weapon Entity Prefabs: itemization shell + Verse components for any behavior, categories/stack/rarity, KFM, equipped logic, Verse grant (no Creative granter yet)
+- `cameras` — Scene Graph camera components (perspective/orthographic/physical), `camera_director_component.AddCamera[...]`, the `camera_modifier` stack (`AddModifier(...)` has NO `<decides>`), `fort_orbit` / `fort_fixed_angle` / `fort_fixed_point` modifiers with full field tables, enter/exit transitions + blends, why `camera_state` and `mesh_component` are `epic_internal`. All Experimental.
+- `custom_player_controller` — fully custom locomotion on an entity: 42.10 `Move`/`Jump` on `TraversalMapping`, `OnSimulate` + `Sleep(0.0)` delta loop (tick subscribe is `epic_internal`), editable speed/accel/friction/gravity/jump, orbit camera install, stock character in stasis; compiled templates via `verse_template_apply("custom_movement")`
 - `template_abilities` — Fortnite template abilities: `fort_template_ability` Verse class, `fort_item_ability_component` on an item prefab, AbilityElements (burn/pepper), IA_Sprint, hotbar grant device
