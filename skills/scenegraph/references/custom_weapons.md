@@ -7,6 +7,8 @@ metadata:
   load_condition: "Creating a custom player weapon prefab, Armory assault_rifle_template / pistol / shotgun / SMG, fort_trace_weapon_component, granting or clearing custom guns in inventory, SetDamage/SetFireRate on custom weapons, or Verse tags on weapon prefabs"
 ---
 
+**Tool order (HARD):** 1) Official UEFN MCP first (`ducky_get_status` → `epic_mcp_online` → nested `unreal__*`). 2) Ducky listener second. 3) `execute_python` LAST — never a placement path, even if Epic and listener failed. Map: `skill_read_subskill("uefn", "epic_mcp")`.
+
 # Custom Armory weapons (Scene Graph)
 
 Custom player firearms are **Entity Prefabs** from `/Fortnite.com/Armory`, not

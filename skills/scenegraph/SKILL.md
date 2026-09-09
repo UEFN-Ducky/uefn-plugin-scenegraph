@@ -5,7 +5,7 @@ description: "UEFN Scene Graph — use when the task is entities, components, or
 license: MIT
 metadata:
   label: "UEFN Scene Graph"
-  version: 18
+  version: 19
   managed_by: uefn-ducky
   author: UEFN-Ducky
   copyright: Copyright 2026 Mindful Path Company, LLC
@@ -13,6 +13,8 @@ metadata:
 ---
 
 # UEFN Scene Graph — entities, components, prefabs
+
+**Tool order (HARD):** 1) Official UEFN MCP first — `ducky_get_status`; when `epic_mcp_online` use nested `unreal__*` (`unreal__list_toolsets` → `unreal__describe_toolset` → `unreal__call_tool`; 5+ ops → ProgrammaticToolset `execute_tool_script`). 2) Ducky listener second (Epic-offline gaps + Ducky-only tools listed in this skill). 3) `execute_python` LAST — never a placement/layout path, even if Epic and listener already failed. Never spawn, move, or assign materials. Map: `skill_read_subskill("uefn", "epic_mcp")`.
 
 **Entity CRUD is nested Epic UEFN MCP.** Settings → MCPs → **UEFN MCP (Epic)**.
 Use `unreal__list_toolsets` → `unreal__describe_toolset` → `unreal__call_tool` into

@@ -7,6 +7,8 @@ metadata:
   load_condition: "Granting, spawning, dropping or equipping weapons and items, reading or filling a player inventory, building pickups/loot, or using item_component / inventory_component / fort_item_pickup_interactable_component"
 ---
 
+**Tool order (HARD):** 1) Official UEFN MCP first (`ducky_get_status` → `epic_mcp_online` → nested `unreal__*`). 2) Ducky listener second. 3) `execute_python` LAST — never a placement path, even if Epic and listener failed. Map: `skill_read_subskill("uefn", "epic_mcp")`.
+
 ## Items, inventories & granting weapons
 
 > **Snippets here are fragments.** The `using` block in this file's first code

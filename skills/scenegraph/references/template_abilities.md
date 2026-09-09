@@ -7,6 +7,8 @@ metadata:
   load_condition: "Building a Fortnite template ability, Spicy Sprint, fort_template_ability, fort_item_ability_component, AbilityElements, status-effect burn/pepper, IA_Sprint, self_ability_target_query, granting an ability item to the weapon hotbar, or an item that fires an ability on input"
 ---
 
+**Tool order (HARD):** 1) Official UEFN MCP first (`ducky_get_status` → `epic_mcp_online` → nested `unreal__*`). 2) Ducky listener second. 3) `execute_python` LAST — never a placement path, even if Epic and listener failed. Map: `skill_read_subskill("uefn", "epic_mcp")`.
+
 # Fortnite template abilities (Scene Graph)
 
 Template abilities are **custom item Entity Prefabs** that run Epic’s ability
