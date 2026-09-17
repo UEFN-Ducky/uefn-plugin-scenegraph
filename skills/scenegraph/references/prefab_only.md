@@ -53,6 +53,15 @@ on the level copy as the primary workflow for prefab-owned content.
 | Always-on / match-start | Prefab asset + `instantiate_prefab` + `save_current_level` |
 | Runtime spawn/despawn | Verse `P_*{}` + `Sim.AddEntities` / `RemoveFromParent` after Verse rebuild |
 
+### Presentable-to-players (v42.20)
+
+`SetPresentableToPlayers(Players:?[]player)` (and `GetPresentableToPlayers`)
+works on **named child entities inside a prefab**, including runtime-spawned
+prefabs. False / empty option = presentable to everyone; an array = only those
+players (empty array = nobody). Dynamically spawned prefab children are
+client-relevant **only when relevant** — they are not always added to the
+client sim, so visibility is not a substitute for not spawning them.
+
 ---
 
 ## Orbit / motion recipe (prefab hierarchy)

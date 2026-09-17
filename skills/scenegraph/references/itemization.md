@@ -70,7 +70,7 @@ qualify transform types, because `/UnrealEngine.com` carries its own copies
 | Module | Contents |
 |--------|----------|
 | `/Fortnite.com/Weapons` | ~300 weapon entity classes, e.g. `AssaultRifle_BR_CH4S1_Rare`, `BoltActionSniperRifle_BR_PreSeason_Epic` |
-| `/Fortnite.com/Items` | consumables and world items, e.g. `WhiteMushroom_Creative_V1_Uncommon` |
+| `/Fortnite.com/Items` | consumables and world items, e.g. `WhiteMushroom_Creative_V1_Uncommon`, **`Unarmed_Creative_V1_Common`** (punch / FPS melee) |
 | `/Fortnite.com/Armory` | creator-customisable templates, e.g. `assault_rifle_template` |
 | `/Fortnite.com/Itemization/FortniteRarities` | `Common`, `Uncommon`, `Rare`, `Epic`, `Legendary`, `Mythic`, `Exotic` |
 | `/Fortnite.com/Itemization/FortniteItemCategories` | category instances for `item_component.Categories` |
@@ -152,6 +152,37 @@ succeed while the gun is still unparented. Parent/equip is
 `Equip()` — `skill_read_subskill("scenegraph", "custom_weapons")`. Owned
 collectible + persist + shop: `skill_read_subskill("verse", "sys_owned_weapons")`.
 `item_granter_device` cannot grant a custom Armory prefab.
+
+### Recipe B2 — punch / FPS melee (v42.20 Unarmed)
+
+**HARD:** grant the stock Unarmed item. Never a custom punch montage, animation
+notify, or `input_trigger_device` melee.
+
+```verse
+GrantUnarmed(Agent:agent):void =
+    if (Inventory := (for (I : Agent.FindDescendantComponents(inventory_component)) do I)[0]):
+        Inventory.AddItemDistribute(Unarmed_Creative_V1_Common{})
+```
+
+Pair with a placed **First Person Camera** Creative device
+(`gameplay_camera_first_person_device` in the Fortnite digest). Place via Epic
+`DeviceToolset` `PlaceDevice` — never `spawn_actor(actor_class="gameplay_camera_first_person_device")`.
+Details: `skill_read_subskill("uefn", "creative_devices")`.
+
+### 42.20 stock guns (copy these class names)
+
+All under `/Fortnite.com/Weapons`. Construct with `{}` like Recipe B.
+
+| Class | Notes |
+|-------|-------|
+| `ReaperSniperRifle_BR_CH7S4_Rare` | also `_Epic`; older `_Legendary` CH7S2 / modular CH5S1 variants exist |
+| `ReaperSniperRifle_BR_CH7S4_Epic` | |
+| `OverpoweredPumpShotgun_BR_CH7S4_Exotic` | |
+| `OverclockedEightBitShotgun_BR_CH7S4_Exotic` | |
+| `BalloonPopperAssaultRifle_BR_CH7S4_Exotic` | |
+| `AccelerantDrumGun_BR_CH7S4_Exotic` | |
+
+Do not invent shorter aliases. Search `list_verse_types(digest="fortnite", name_filter="CH7S4")` if you need another rarity.
 
 ### Recipe C — a pickup in the world
 

@@ -5,7 +5,7 @@ description: "UEFN Scene Graph — use when the task is entities, components, or
 license: MIT
 metadata:
   label: "UEFN Scene Graph"
-  version: 20
+  version: 21
   managed_by: uefn-ducky
   author: UEFN-Ducky
   copyright: Copyright 2026 Mindful Path Company, LLC
@@ -167,7 +167,8 @@ free-text hunts, `list_verse_modules` for the module map.
   concrete classes under `/Fortnite.com/Weapons` / `/Fortnite.com/Items` —
   grant with `Inventory.AddItemDistribute(AssaultRifle_BR_CH4S1_Rare{})` after
   finding the agent's descendant `inventory_component`. Never `spawn_actor` a
-  weapon class. Recipes: `itemization`. **Custom player firearms** are Entity
+  weapon class. Punch / FPS melee: grant `Unarmed_Creative_V1_Common{}` the same
+  way — never a custom punch montage. Recipes: `itemization`. **Custom player firearms** are Entity
   Prefabs from `/Fortnite.com/Armory` templates (`assault_rifle_template`,
   pistol / shotgun / SMG) with `fort_trace_weapon_component` — mesh swap,
   tuning, and Verse grant/equip/clear/mutate: `custom_weapons`. Owned persist +
