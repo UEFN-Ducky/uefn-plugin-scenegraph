@@ -7,8 +7,6 @@ metadata:
   load_condition: "Editing EntityPrefabs, solar-system / orbit hierarchies, avoiding level-instance overrides, or packaging entities into prefabs"
 ---
 
-**Tool order (HARD):** 1) Official UEFN MCP first (`ducky_get_status` → `epic_mcp_online` → nested `unreal__*`). 2) Ducky listener second. 3) `execute_python` LAST — never a placement path, even if Epic and listener failed. Map: `skill_read_subskill("uefn", "epic_mcp")`.
-
 ## Prefab-only editing (hard rules)
 
 **Edit the EntityPrefab asset — never the placed level instance as the source of truth.**
@@ -25,7 +23,7 @@ on the level copy as the primary workflow for prefab-owned content.
   Content Browser → edit the asset (Details → Add Component, hierarchy) → **Save
   the prefab**.
 - Do **not** “fix it on the level instance instead” when the user asked for
-  prefab-only edits. Tell the user to save the prefab asset.
+  prefab-only edits. Call `save_asset` on the EntityPrefab yourself.
 - `open_asset_in_uefn` can reveal/open the prefab; tools still will not list that
   transient world’s entities.
 

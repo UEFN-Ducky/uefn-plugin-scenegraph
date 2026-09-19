@@ -5,7 +5,7 @@ description: "UEFN Scene Graph — use when the task is entities, components, or
 license: MIT
 metadata:
   label: "UEFN Scene Graph"
-  version: 21
+  version: 22
   managed_by: uefn-ducky
   author: UEFN-Ducky
   copyright: Copyright 2026 Mindful Path Company, LLC
@@ -13,8 +13,6 @@ metadata:
 ---
 
 # UEFN Scene Graph — entities, components, prefabs
-
-**Tool order (HARD):** 1) Official UEFN MCP first — `ducky_get_status`; when `epic_mcp_online` use nested `unreal__*` (`unreal__list_toolsets` → `unreal__describe_toolset` → `unreal__call_tool`; 5+ ops → ProgrammaticToolset `execute_tool_script`). 2) Ducky listener second (Epic-offline gaps + Ducky-only tools listed in this skill). 3) `execute_python` LAST — never a placement/layout path, even if Epic and listener already failed. Never spawn, move, or assign materials. Map: `skill_read_subskill("uefn", "epic_mcp")`.
 
 **Entity CRUD is nested Epic UEFN MCP.** Settings → MCPs → **UEFN MCP (Epic)**.
 Use `unreal__list_toolsets` → `unreal__describe_toolset` → `unreal__call_tool` into
@@ -30,7 +28,7 @@ entity tools no longer exist. Map: `skill_read_subskill("uefn", "epic_mcp")`.
 **CRITICAL — editor mutations are SERIAL:** one heavy MCP call
 (`unreal__*` / `instantiate_prefab` / `spawn_actor` / `wire_verse_device_ref` /
 `save_current_level` / …) → wait → next. Never parallel or same-turn multi —
-freezes UEFN. Details: `skill_read_subskill("uefn", "batch_commands")`. Button
+freezes UEFN. Details: SERIAL: one mutating/editor call per assistant message.. Button
 devices for grants: nested Epic Creative devices (`creative_devices`).
 
 Scene Graph is UEFN's entity-component system: **entities** are containers,
@@ -238,3 +236,7 @@ Load with `skill_read_subskill("scenegraph", "<id>")`:
 - `cameras` — Scene Graph camera components (perspective/orthographic/physical), `camera_director_component.AddCamera[...]`, the `camera_modifier` stack (`AddModifier(...)` has NO `<decides>`), `fort_orbit` / `fort_fixed_angle` / `fort_fixed_point` modifiers with full field tables, enter/exit transitions + blends, why `camera_state` and `mesh_component` are `epic_internal`. All Experimental.
 - `custom_player_controller` — fully custom locomotion on an entity: 42.10 `Move`/`Jump` on `TraversalMapping`, `OnSimulate` + `Sleep(0.0)` delta loop (tick subscribe is `epic_internal`), editable speed/accel/friction/gravity/jump, orbit camera install, stock character in stasis; compiled templates via `verse_template_apply("custom_movement")`
 - `template_abilities` — Fortnite template abilities: `fort_template_ability` Verse class, `fort_item_ability_component` on an item prefab, AbilityElements (burn/pepper), IA_Sprint, hotbar grant device
+
+## Verify
+
+`changeset_list` after prefab save; `save_asset` on the EntityPrefab yourself — never ask the user to save.

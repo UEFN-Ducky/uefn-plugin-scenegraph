@@ -7,8 +7,6 @@ metadata:
   load_condition: "Creating a fully custom non-weapon item Entity Prefab, custom inventory pickup mesh/icon, item Categories (currency/resource/ammo), stacking/rarity, spinning or bobbing dropped items with keyframed_movement, detecting IsEquipped / ChangeEquippedEvent, Verse components that run while held, or granting custom Scene Graph items (not Armory weapons)"
 ---
 
-**Tool order (HARD):** 1) Official UEFN MCP first (`ducky_get_status` → `epic_mcp_online` → nested `unreal__*`). 2) Ducky listener second. 3) `execute_python` LAST — never a placement path, even if Epic and listener failed. Map: `skill_read_subskill("uefn", "epic_mcp")`.
-
 # Custom Scene Graph items (do anything)
 
 Custom non-weapon items are **Entity Prefabs**: an itemization **shell** plus
@@ -388,7 +386,7 @@ Rules:
 - **Footgun:** bulk-granting many stock weapons + custom items in one tight
   loop has produced infinite-loop Verse errors. Grant one item per interaction.
 - Wire buttons with `wire_verse_device_ref` — **one field per turn**
-  (`skill_read_subskill("uefn", "batch_commands")`).
+  (SERIAL: one mutating/editor call per assistant message.).
 
 ## Recipe checklist (full custom item)
 
