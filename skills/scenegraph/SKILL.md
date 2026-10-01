@@ -5,7 +5,7 @@ description: "UEFN Scene Graph — use when the task is entities, components, or
 license: MIT
 metadata:
   label: "UEFN Scene Graph"
-  version: 22
+  version: 23
   managed_by: uefn-ducky
   author: UEFN-Ducky
   copyright: Copyright 2026 Mindful Path Company, LLC
@@ -178,6 +178,10 @@ free-text hunts, `list_verse_modules` for the module map.
   KFM, grant/equip) — no Creative granter path yet: `custom_items`.
   **Template abilities** (Spicy Sprint, status-effect AbilityElements,
   `fort_item_ability_component` + `fort_template_ability`) — `template_abilities`.
+  **42.30:** `fort_template_ability` is not parametric (`x := class(fort_template_ability):`,
+  or no Verse at all); target queries take `Targets := array{…}` (`Any` → `Neutral`).
+  **Held items** (a carried torch / lantern / tool, `held_item_template`) — `held_items`.
+  Scene-event `OnReceive` runs on the server only (client calls are ignored).
 - **Mesh axis quirks**: put FBX yaw/pitch offsets on a **child** mesh entity
   (`SetLocalTransform`), keep root entity yaw = thrust/look heading.
 - **SpatialMath axes, not Unreal axes**: translations/scales are
@@ -235,7 +239,8 @@ Load with `skill_read_subskill("scenegraph", "<id>")`:
 - `custom_items` — fully custom non-weapon Entity Prefabs: itemization shell + Verse components for any behavior, categories/stack/rarity, KFM, equipped logic, Verse grant (no Creative granter yet)
 - `cameras` — Scene Graph camera components (perspective/orthographic/physical), `camera_director_component.AddCamera[...]`, the `camera_modifier` stack (`AddModifier(...)` has NO `<decides>`), `fort_orbit` / `fort_fixed_angle` / `fort_fixed_point` modifiers with full field tables, enter/exit transitions + blends, why `camera_state` and `mesh_component` are `epic_internal`. All Experimental.
 - `custom_player_controller` — fully custom locomotion on an entity: 42.10 `Move`/`Jump` on `TraversalMapping`, `OnSimulate` + `Sleep(0.0)` delta loop (tick subscribe is `epic_internal`), editable speed/accel/friction/gravity/jump, orbit camera install, stock character in stasis; compiled templates via `verse_template_apply("custom_movement")`
-- `template_abilities` — Fortnite template abilities: `fort_template_ability` Verse class, `fort_item_ability_component` on an item prefab, AbilityElements (burn/pepper), IA_Sprint, hotbar grant device
+- `template_abilities` — Fortnite template abilities: `fort_template_ability` (not parametric since 42.30), `fort_item_ability_component` on an item prefab, `Targets` arrays, AbilityElements (burn/pepper/removal), attribute modifiers (editor-only), animation spans, IA_Sprint, hotbar grant device
+- `held_items` — 42.30 `held_item_template`: carryable non-weapon prefabs (torch → lantern/tool/banner), setup, Verse grant/equip, ADS toggles
 
 ## Verify
 

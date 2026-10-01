@@ -304,7 +304,9 @@ a `spawn` result.
 For systems outside the item (shops, quests, HUD): subscribe on the player’s
 `inventory_component` to `AddItemEvent` / `RemoveItemEvent` / `EquipItemEvent` /
 `UnequipItemEvent` — see `itemization`. Find inventory with
-`Agent.FindDescendantComponents(inventory_component)`.
+`Agent.FindDescendantComponents(inventory_component)`. 42.30 fixed
+`RemoveItemEvent`'s `RemovedAmount` (it was always 0) and equipping from Verse
+no longer leaves the player unable to aim or shoot.
 
 ## Verse grant / equip / clear / has
 

@@ -78,6 +78,11 @@ Also on `component`: `Entity` (the owner), `RemoveFromEntity()`,
 (override, return `true` to consume — `MinUploadedAtFNVersion := 4000`), and
 `TickEvents`.
 
+**42.30 upgrade note (HARD):** scene events are dispatched to `OnReceive` on the
+**server only**. Anything that relied on `OnReceive` running on a client is now
+ignored (a log line says so; before it could crash). Keep scene-event logic
+server-side.
+
 ### Per-frame work: `OnSimulate` loop (TickEvents is Epic-only on 42.10)
 
 **`TickEvents.PrePhysics.Subscribe(...)` does NOT compile in creator code.**

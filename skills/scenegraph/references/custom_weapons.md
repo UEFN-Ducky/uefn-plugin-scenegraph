@@ -21,6 +21,7 @@ with `get_verse_api` / `search_verse_digest` before shipping.
 | Stock Fortnite gun grant / pickup | `skill_read_subskill("scenegraph", "itemization")` |
 | **Custom mesh + tunable AR/pistol/shotgun/SMG** | **this file** |
 | Custom non-weapon item (pickup / icon / mesh) | `skill_read_subskill("scenegraph", "custom_items")` |
+| Something the player **holds** that is not a gun (torch, lantern, tool) — 42.30 `held_item_template` | `skill_read_subskill("scenegraph", "held_items")` |
 | Soft persist bags + Creative Item Granter | `skill_read_subskill("verse", "sys_inventory")` |
 | Owned guns (persist, collectible pickup, canvas shop, rejoin) | `skill_read_subskill("verse", "sys_owned_weapons")` |
 | NPC combat / projectiles | Store `npc-ai` / `sys_npc_ai` |
@@ -54,6 +55,7 @@ one of four Armory templates (more may arrive later):
 | `pistol_template` | Sidearm |
 | `shotgun_template` | Shotgun |
 | `sub_machine_gun_template` | SMG |
+| `held_item_template` (42.30) | Not a weapon — a held prop (torch by default) → `held_items` |
 
 Name the asset (e.g. `GnomeGun`). You are in the prefab editor with the entity
 and its components. Templates already ship a full fire/reload loop — you tune
@@ -85,6 +87,7 @@ Ctrl+click the type in the Verse editor to open the digest):
 | Ammo | `MagazineCapacity`, `ShotAmmoCost` (no separate reserve-ammo setter on this component) |
 | Visuals | `MuzzleFlash`, `MuzzleOffset`, `BulletTracer` (Niagara), `EjectionPortOffset`, `BulletShells` |
 | Sounds | `WeaponFireSound`, `EquipSound` (UI “clip”), ADS start/end, reload start/insert/end, `OutOfAmmoSound` |
+| Aim (42.30) | `AllowAimDownSightsInAir` / `SetAllowAimDownSightsInAir(Val:logic)`, `AllowAimDownSightsDuringReload` / `SetAllowAimDownSightsDuringReload(Val:logic)` |
 
 **UI clamps (editor):** FireRate max **25** (typing 100 clamps); Recoil max
 **10**.

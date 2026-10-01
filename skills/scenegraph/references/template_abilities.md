@@ -1,5 +1,5 @@
 ---
-description: "Fortnite template abilities — Scene Graph item prefabs with fort_item_ability_component, fort_template_ability Verse class, status-effect AbilityElements (burn/pepper), input triggers (IA_Sprint), and hotbar grant"
+description: "Fortnite template abilities — Scene Graph item prefabs with fort_item_ability_component, fort_template_ability (not parametric since 42.30; Verse optional), Targets arrays (Friendly/Neutral/Hostile), status-effect AbilityElements (burn/pepper/removal), attribute modifiers, animation spans, input triggers (IA_Sprint), and hotbar grant"
 metadata:
   order: 9
   label: "Template abilities"
@@ -56,10 +56,10 @@ Confirm every member you set in Details (`ItemAbilities`, `InputTrigger`,
 ## Mental model
 
 ```
-Verse (compile first)
-└── template_ability := class(fort_template_ability(...))
-    └── MakeContext / MakeAbility / ActiveEffects
-        → exposes inherited properties on the item prefab
+Verse (optional since 42.30)
+└── template_ability := class(fort_template_ability):
+        → only gives the ability its own type name; MakeContext / MakeAbility /
+          ActiveEffects are built in. Or pick fort_template_ability itself.
 
 Entity Prefab (ability item)
 ├── item_component                    Categories: WeaponMelee (Spicy Sprint)
@@ -135,16 +135,9 @@ using { /Verse.org/Simulation }
 (Player : player).GetWeaponHotbarComponent()<decides><transacts> : fort_inventory_weapon_hotbar_component =
     (for (Hotbar : Player.FindDescendantComponents(fort_inventory_weapon_hotbar_component)) do Hotbar)[0]   # Verse has no `first`
 
-# Defining this type exposes inherited properties on the item prefab.
-template_ability := class(fort_template_ability(ability_context, fort_template_ability_effect)):
-
-    var ActiveEffects<override> : []fort_template_ability_effect = array{}
-
-    MakeContext<override>()<transacts> : ability_context =
-        ability_context{}
-
-    MakeAbility<override>()<transacts> : fort_template_ability_effect =
-        fort_template_ability_effect{}
+# 42.30: not parametric; MakeContext / MakeAbility / ActiveEffects are built in.
+# Subclass only to give the prefab its own type name (or pick fort_template_ability itself).
+template_ability := class(fort_template_ability):
 
 template_ability_item_granter_device := class(creative_device):
 
@@ -164,8 +157,35 @@ template_ability_item_granter_device := class(creative_device):
             GrantItemTo(FirstPlayer)
 ```
 
-Signatures above are Epic’s published quickstart. If `workspace_list_verse_errors`
-disagrees, **digest wins** — `get_verse_api` and fix. Do not patch `*.digest.verse`.
+This block compiled in UEFN 42.30 (only the 2304 "experimental" warning — the
+ability API is Experimental, so the island cannot publish with it yet). If
+`workspace_list_verse_errors` disagrees, **digest wins** — `get_verse_api` and
+fix. Do not patch `*.digest.verse`.
+
+## 42.30 changes (digest-verified)
+
+| Before 42.30 | 42.30 |
+| --- | --- |
+| `class(fort_template_ability(ability_context, fort_template_ability_effect))` + three overrides | `class(fort_template_ability):` — or no Verse at all (pick `fort_template_ability` as the ItemAbilities type) |
+| `TargetQuery.Target := fort_target_query_affiliation.Any` | `Targets := array{…}` on `fort_reticle_ability_target_query` (+ `Range`) and `fort_wedge_ability_target_query` (+ `Radius`, `CentralAngle`); enum `fort_target_query_affiliation` = `Friendly`, `Neutral`, `Hostile` (`Any` removed — list every affiliation you want) |
+| animation span `Animation` + `fort_ability_anim_layer` | `fort_ability_animation_element_span`: `AnimationSequence:animation_sequence`, `AnimationLayer:play_animation_layer`, `EaseIn`, `EaseOut` — re-pick the animation in old spans |
+| — | `fort_ability_status_effect_removal_point` — `StatusEffects:[]concrete_subtype(fort_ability_status_effect_point)` removes those effects from the target |
+| — | `fort_ability_status_effect_burn_point.DamagePerSecond:float` |
+| — | **Attribute Modifier** point / span (Add / Multiply / Override `MaxHealth`, `MaxShield`, `Speed`, `Gravity`) — editor timeline elements only; **not in any digest**, never reference them from Verse |
+
+Target query in Verse (compiles in 42.30):
+
+```verse
+using { /Fortnite.com/Abilities }
+
+MakeConeQuery():fort_wedge_ability_target_query =
+    fort_wedge_ability_target_query:
+        Targets := array{fort_target_query_affiliation.Hostile, fort_target_query_affiliation.Neutral}
+        Radius := 500.0
+        CentralAngle := 90.0
+```
+
+Ducky's Verse lint flags the old forms (`fort_template_ability(`, `.Any`, `Target :=`).
 
 ## Playtest
 
