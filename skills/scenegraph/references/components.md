@@ -111,7 +111,7 @@ subclass — `Ent.AddComponents(array{sphere{Entity := Ent}})`.
 | `inventory_component` | Holds items. `AddItemDistribute` is the grant call; also `AddItem`, `RemoveItem`, `GetItems`, `FindItems`, `GetEquippedItems`, add/remove/equip events. On a player it sits on a **subentity** of the agent. |
 | `fort_item_pickup_interactable_component` | World pickup. Owning entity needs `item_component` + `mesh_component`; exposes `GetInteractorInventory(Agent)`. Gated `MinUploadedAtFNVersion := 4040`. Fields from `basic_interactable_component`: `CanInteractMessage`, `CannotInteractMessage`, `Cooldown`, `CooldownPerAgent`, `SuccessLimit`, `InteractableDuration`, `Enable`/`Disable`. |
 | `fort_inventory_component` (+ `fort_inventory_*` subclasses) | **Player inventory** types (weapon hotbar, resources, currencies, ammo, …) — not components for custom item prefabs. Custom items use `item_component` (+ optional `Categories`). |
-| `fort_item_ability_component` | Template abilities on an item (`ItemAbilities` / `ItemEquippedAbilities`, InputTrigger, TargetQuery, AbilityElements). Digest-gated experimental. Recipes: `template_abilities`. |
+| `fort_item_ability_component` | Template abilities on an item (`ItemAbilities` / `ItemEquippedAbilities`, InputTrigger, TargetQuery, AbilityElements). Out of Experimental since 42.40 (publishable). Recipes: `template_abilities`; Verse-authored abilities: `custom_abilities`. |
 
 #### Armory (`/Fortnite.com/Armory`)
 

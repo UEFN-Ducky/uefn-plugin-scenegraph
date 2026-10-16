@@ -1,10 +1,10 @@
 ---
-description: "Fortnite template abilities — Scene Graph item prefabs with fort_item_ability_component, fort_template_ability (not parametric since 42.30; Verse optional), Targets arrays (Friendly/Neutral/Hostile), status-effect AbilityElements (burn/pepper/removal), attribute modifiers, animation spans, input triggers (IA_Sprint), and hotbar grant"
+description: "Fortnite template abilities (out of Experimental in 42.40) — Scene Graph item prefabs with fort_item_ability_component, fort_template_ability (not parametric; Verse optional), Targets arrays (Friendly/Neutral/Hostile, open enum), fort_self_ability_target_query, wedge Angle in radians, status-effect AbilityElements (burn/pepper/removal), attribute modifier point/span (in Verse since 42.40), animation spans, input triggers (IA_Sprint), and hotbar grant"
 metadata:
   order: 9
   label: "Template abilities"
   default_enabled: false
-  load_condition: "Building a Fortnite template ability, Spicy Sprint, fort_template_ability, fort_item_ability_component, AbilityElements, status-effect burn/pepper, IA_Sprint, self_ability_target_query, granting an ability item to the weapon hotbar, or an item that fires an ability on input"
+  load_condition: "Building a Fortnite template ability, Spicy Sprint, fort_template_ability, fort_item_ability_component, AbilityElements, status-effect burn/pepper, IA_Sprint, fort_self_ability_target_query / self_ability_target_query, attribute modifiers, wedge or cone targeting, granting an ability item to the weapon hotbar, or an item that fires an ability on input"
 ---
 
 # Fortnite template abilities (Scene Graph)
@@ -17,9 +17,13 @@ Sprint input applies burn DoT + pepper speed at once.
 Not Armory firearms (`custom_weapons`). Not a Creative Item Granter. Not a
 custom item whose “ability” is only a Verse component (`custom_items`).
 
+**42.40:** template abilities are out of Experimental — islands that use them can
+publish. Verse-authored abilities (`ability(context, effect)`, `Use()` from Verse):
+`custom_abilities`.
+
 ## Digest gate (do this first)
 
-This API is experimental. **Never guess.** On the current island:
+**Never guess.** On the current island:
 
 ```
 search_verse_digest({"query": "fort_template_ability"})
@@ -67,7 +71,7 @@ Entity Prefab (ability item)
     ├── ItemAbilities[0]              always-on, or ItemEquippedAbilities if held-only
     │   ├── type = your template_ability class
     │   ├── InputTrigger = IA_Sprint (Assets_input_action)
-    │   ├── TargetQuery = self_ability_target_query
+    │   ├── TargetQuery = fort_self_ability_target_query
     │   └── AbilityElements[]
     │       ├── fort_ability_status_effect_burn_point    (DoT)
     │       └── fort_ability_status_effect_pepper_point  (speed)
@@ -107,7 +111,8 @@ Content Browser → Entity Prefab → `PF_SpicySprintItem` → Prefab Editor:
    ability should fire only while the item is equipped.
 4. Index[0] type = `template_ability` (your compiled class). Expand it:
    - **InputTrigger** → `Assets_input_action` → `IA_Sprint`
-   - **TargetQuery** → `self_ability_target_query`
+   - **TargetQuery** → `fort_self_ability_target_query` (Epic's quickstart still says
+     `self_ability_target_query` — 42.40 renamed it)
    - **AbilityElements** two entries:
      - `[0]` `fort_ability_status_effect_burn_point` (periodic health damage)
      - `[1]` `fort_ability_status_effect_pepper_point` (movement speed)
@@ -157,8 +162,8 @@ template_ability_item_granter_device := class(creative_device):
             GrantItemTo(FirstPlayer)
 ```
 
-This block compiled in UEFN 42.30 (only the 2304 "experimental" warning — the
-ability API is Experimental, so the island cannot publish with it yet). If
+This block compiled in UEFN 42.30 with a 2304 "experimental" warning; in 42.40 the
+ability types are no longer Experimental (no warning) and the island can publish. If
 `workspace_list_verse_errors` disagrees, **digest wins** — `get_verse_api` and
 fix. Do not patch `*.digest.verse`.
 
@@ -167,13 +172,32 @@ fix. Do not patch `*.digest.verse`.
 | Before 42.30 | 42.30 |
 | --- | --- |
 | `class(fort_template_ability(ability_context, fort_template_ability_effect))` + three overrides | `class(fort_template_ability):` — or no Verse at all (pick `fort_template_ability` as the ItemAbilities type) |
-| `TargetQuery.Target := fort_target_query_affiliation.Any` | `Targets := array{…}` on `fort_reticle_ability_target_query` (+ `Range`) and `fort_wedge_ability_target_query` (+ `Radius`, `CentralAngle`); enum `fort_target_query_affiliation` = `Friendly`, `Neutral`, `Hostile` (`Any` removed — list every affiliation you want) |
+| `TargetQuery.Target := fort_target_query_affiliation.Any` | `Targets := array{…}` on `fort_reticle_ability_target_query` (+ `Range`) and `fort_wedge_ability_target_query` (+ `Radius`, `CentralAngle` → `Angle` in 42.40); enum `fort_target_query_affiliation` = `Friendly`, `Neutral`, `Hostile` (`Any` removed — list every affiliation you want) |
 | animation span `Animation` + `fort_ability_anim_layer` | `fort_ability_animation_element_span`: `AnimationSequence:animation_sequence`, `AnimationLayer:play_animation_layer`, `EaseIn`, `EaseOut` — re-pick the animation in old spans |
 | — | `fort_ability_status_effect_removal_point` — `StatusEffects:[]concrete_subtype(fort_ability_status_effect_point)` removes those effects from the target |
 | — | `fort_ability_status_effect_burn_point.DamagePerSecond:float` |
-| — | **Attribute Modifier** point / span (Add / Multiply / Override `MaxHealth`, `MaxShield`, `Speed`, `Gravity`) — editor timeline elements only; **not in any digest**, never reference them from Verse |
+| — | **Attribute Modifier** point / span (Add / Multiply / Override `MaxHealth`, `MaxShields`, `Speed`, `Gravity`) — editor-only in 42.30; **in the digest since 42.40** (below) |
 
-Target query in Verse (compiles in 42.30):
+## 42.40 changes (digest-verified, compiled 0 errors / 0 warnings)
+
+| 42.30 | 42.40 |
+| --- | --- |
+| everything `@experimental` (2304 warning, can't publish) | no `@experimental` on any ability type — publishable |
+| `fort_wedge_ability_target_query.CentralAngle` (degrees) | **`Angle`, radians**, 0 – 2π (90° = `1.5708`). `CentralAngle` is Script error 3506 |
+| `self_ability_target_query` | **`fort_self_ability_target_query`** (old name: 3506 Unknown identifier) |
+| attribute modifiers editor-only | `fort_ability_attribute_modifier_point` / `_span`: `AttributeModifiers : []fort_attribute_modifier{Attribute, Modifier, Value}`, `ApplyToInstigator`, `ApplyToTargets` (point adds `Duration`). `fort_ability_attribute` = `MaxHealth`, `MaxShields`, `Speed`, `Gravity`; `fort_ability_attribute_modifier` = `Add`, `Multiply`, `Override` |
+| plain enums | `fort_ability_attach_socket` (`Root`, `LeftHand`, `RightHand`, `Head`, `Chest`, `LeftFoot`, `RightFoot`) and `fort_target_query_affiliation` are `<open>` — a `case` needs `_ =>` (3512 otherwise) |
+| `@editable` floats | `@editable_number` with a minimum of 0 (amounts, range, radius, durations, `BeginTime` / `EndTime`, `EaseIn` / `EaseOut`, burn `DamagePerSecond`) |
+| — | `fort_projectile_component.LifetimeAfterStop` + `SetLifetimeAfterStop(Seconds)`; `GetInstigator[]` returns an `entity` |
+| `ability_context.Instigator : ?agent` | `?entity` — cast with `agent[...]` (`custom_abilities`) |
+
+42.40 fixes: `Use()` with a player instigator works; ability animations replicate and
+looped ones loop; a rejected use no longer runs its timeline; `Cancel` stops the
+timeline and end events fire once; unequipping mid-use still fires end events; target
+queries return entities for players, NPCs and actors that have them; burn VFX shows on
+the player.
+
+Target queries and modifiers in Verse (compiled in 42.40):
 
 ```verse
 using { /Fortnite.com/Abilities }
@@ -182,10 +206,27 @@ MakeConeQuery():fort_wedge_ability_target_query =
     fort_wedge_ability_target_query:
         Targets := array{fort_target_query_affiliation.Hostile, fort_target_query_affiliation.Neutral}
         Radius := 500.0
-        CentralAngle := 90.0
+        Angle := 1.5708          # radians: 90 degrees
+
+MakeSelfQuery():fort_self_ability_target_query = fort_self_ability_target_query{}
+
+MakeSpeedBoost():fort_ability_attribute_modifier_point =
+    fort_ability_attribute_modifier_point:
+        AttributeModifiers := array{fort_attribute_modifier{Attribute := fort_ability_attribute.Speed, Modifier := fort_ability_attribute_modifier.Multiply, Value := 1.5}}
+        ApplyToInstigator := true
+        ApplyToTargets := false
+        Duration := 3.0
+
+SocketName(S:fort_ability_attach_socket):string =
+    case (S):
+        fort_ability_attach_socket.Root => "root"
+        fort_ability_attach_socket.RightHand => "right hand"
+        _ => "other"             # open enum: required
 ```
 
-Ducky's Verse lint flags the old forms (`fort_template_ability(`, `.Any`, `Target :=`).
+Ducky's Verse lint flags the old forms (`fort_template_ability(`, `.Any`, `Target :=`,
+`CentralAngle`, `self_ability_target_query`). Firing a template ability from Verse
+(`Ability.Use(...)`, no_rollback): `custom_abilities`.
 
 ## Playtest
 

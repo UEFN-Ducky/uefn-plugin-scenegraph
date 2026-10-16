@@ -129,3 +129,6 @@ reports per-actor results. Devices should stay devices.
   `instantiate_prefab` of the original asset (see `prefab_only`).
 - **Pivot won't orbit / `local_transform_error`** — add `transform_component`
   (or `SetLocalTransform` in Verse) before KFM.
+- **Prefab Editor toolbar tools missing** (42.40 fix) — when the viewport toolbar is
+  too narrow, the hidden tools are in its menu; the multi-viewport layout names show
+  and the Maximize checkbox reflects a maximized viewport.

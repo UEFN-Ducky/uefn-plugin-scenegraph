@@ -18,7 +18,9 @@ tool, a banner, a flashlight, any prop the player equips and holds.
 It sits next to the weapon templates (`pistol_template`, `assault_rifle_template`,
 `shotgun_template`, `sub_machine_gun_template` — `custom_weapons`) and follows
 the same workflow. Verified: `held_item_template{}` + `AddItemDistribute` +
-`Equip()` compiles in 42.30 (Tycoony, Oct 1 2026).
+`Equip()` compiles in 42.30 (Tycoony, Oct 1 2026). 42.40 adds the template's mesh class
+to the digest: `torch_mesh := class<final>(mesh_component)` (`/Fortnite.com/Armory`,
+4240) — the default torch; swap the mesh in the prefab, don't subclass it.
 
 ## Pick the right path
 

@@ -179,6 +179,8 @@ All under `/Fortnite.com/Weapons`. Construct with `{}` like Recipe B.
 | `OverclockedEightBitShotgun_BR_CH7S4_Exotic` | |
 | `BalloonPopperAssaultRifle_BR_CH7S4_Exotic` | |
 | `AccelerantDrumGun_BR_CH7S4_Exotic` | |
+| `GatekeeperShotgun_BR_CH7S4_Rare` | 42.40; also `_BR_CH7S4_Epic` |
+| `GatekeeperShotgun_BR_CH7S2_Legendary` | 42.40 — note the CH7**S2** in the Legendary name |
 
 Do not invent shorter aliases. Search `list_verse_types(digest="fortnite", name_filter="CH7S4")` if you need another rarity.
 

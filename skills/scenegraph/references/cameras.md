@@ -191,6 +191,9 @@ Add it to an entity as an asset component through Epic `EntityToolset.AddCompone
 - Don't subclass `mesh_component`, and don't invent mesh class names — read them
   from the Assets digest.
 - Don't promise publishing: every symbol on this page is Experimental.
+- 42.40 fixed audio staying spatialized around the player's original camera while a
+  Scene Graph camera is active on their `camera_director` — sound now follows the
+  active camera.
 - Don't place two components of the same camera class on one entity.
 
 ### Related
